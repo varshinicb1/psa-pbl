@@ -1,0 +1,6 @@
+flowchart TB
+  Case["MATPOWER case struct (mpc)\n(bus/gen/branch)"] --> RunPF["runpf / runopf\n(M-files; MATLAB/Octave)"]
+  RunPF --> Results["results struct\n(bus/branch/gen outputs)"]
+  Results --> Bridge["Octave JSON bridge\n(Python ↔ Octave)"]
+  Bridge --> Adapter["dt-sim-matpower\n(map ↔ GridGraph)"]
+

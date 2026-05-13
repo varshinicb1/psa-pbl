@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/dt-contracts/gridgraph.schema.json",
+  "title": "GridGraphSnapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "t", "topology_hash", "topology_version", "nodes", "edges"],
+  "properties": {
+    "schema_version": { "type": "string", "minLength": 1 },
+    "t": {
+      "description": "Snapshot event-time in ISO-8601 (UTC recommended).",
+      "type": "string",
+      "minLength": 1
+    },
+    "topology_hash": { "type": "string", "minLength": 1 },
+    "topology_version": { "type": "integer", "minimum": 0 },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    }
+  },
+  "$defs": {
+    "kv": {
+      "type": "object",
+      "description": "Flexible attribute bag (static or dynamic).",
+      "additionalProperties": true
+    },
+    "externalRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "object_type", "object_name"],
+      "properties": {
+        "engine": { "type": "string", "minLength": 1 },
+        "object_type": { "type": "string", "minLength": 1 },
+        "object_name": { "type": "string", "minLength": 1 },
+        "terminal": { "type": "string" },
+        "phase": { "type": "string" }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "description": "Examples: BusTerminal, Bus, Transformer, DER, Generator, Breaker, Relay, PMU, Substation."
+        },
+        "static": { "$ref": "#/$defs/kv" },
+        "dynamic": { "$ref": "#/$defs/kv" },
+        "external_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/externalRef" }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "source", "target"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "description": "Examples: Line, Transformer, Switch, ProtectionDevice, MeasurementOf, Containment."
+        },
+        "source": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "static": { "$ref": "#/$defs/kv" },
+        "dynamic": { "$ref": "#/$defs/kv" },
+        "external_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/externalRef" }
+        }
+      }
+    }
+  }
+}
+

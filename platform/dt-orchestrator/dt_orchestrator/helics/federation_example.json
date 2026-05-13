@@ -1,0 +1,6 @@
+{
+  "name": "poc_federation",
+  "description": "PoC placeholder HELICS federation config. Expand with federates for transmission, distribution, controller, recorder.",
+  "federates": []
+}
+

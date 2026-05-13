@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dt-contracts"
+version = "0.1.0"
+description = "Canonical contracts for the Autonomous Explainable Grid Digital Twin PoC"
+requires-python = ">=3.10"
+dependencies = [
+  "pydantic>=2.6",
+  "jsonschema>=4.21",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"dt_contracts.schemas" = ["*.json"]

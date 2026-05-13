@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/dt-contracts/telemetry.schema.json",
+  "title": "TelemetryTick",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "t_event", "t_ingest", "measurements", "events"],
+  "properties": {
+    "schema_version": { "type": "string", "minLength": 1 },
+    "t_event": { "type": "string", "minLength": 1 },
+    "t_ingest": { "type": "string", "minLength": 1 },
+    "source": { "type": "string" },
+    "measurements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/measurement" }
+    },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" }
+    },
+    "metadata": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "valid": { "type": "boolean" },
+        "missing": { "type": "boolean" },
+        "estimated": { "type": "boolean" },
+        "bad_data": { "type": "boolean" },
+        "delay_ms": { "type": "number", "minimum": 0 }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_id", "signal", "value"],
+      "properties": {
+        "entity_id": { "type": "string", "minLength": 1 },
+        "signal": {
+          "type": "string",
+          "description": "Examples: V_mag, V_ang, P, Q, I_mag, freq, rocof, breaker_status, relay_state."
+        },
+        "value": { "type": ["number", "string", "boolean"] },
+        "unit": { "type": "string" },
+        "phase": { "type": "string", "description": "A/B/C/N or blank for balanced signals." },
+        "quality": { "$ref": "#/$defs/quality" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Examples: FaultInjected, SwitchOpened, SwitchClosed, CyberAttack, SensorFailure."
+        }
+      }
+    }
+  }
+}
+

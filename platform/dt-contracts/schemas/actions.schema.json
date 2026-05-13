@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/dt-contracts/actions.schema.json",
+  "title": "ActionPlan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "t", "actions"],
+  "properties": {
+    "schema_version": { "type": "string", "minLength": 1 },
+    "t": { "type": "string", "minLength": 1 },
+    "plan_id": { "type": "string" },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "expected_outcome": { "type": "object", "additionalProperties": true },
+    "metadata": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "action": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type", "device_id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Examples: SwitchAction, SetpointAction."
+        },
+        "device_id": { "type": "string", "minLength": 1 },
+        "desired_state": { "type": ["string", "boolean", "number"] },
+        "effective_time": { "type": "string" }
+      }
+    }
+  }
+}
+

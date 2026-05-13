@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/dt-contracts/explanations.schema.json",
+  "title": "ExplanationPacket",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "t", "model_version", "target", "explanations"],
+  "properties": {
+    "schema_version": { "type": "string", "minLength": 1 },
+    "t": { "type": "string", "minLength": 1 },
+    "model_version": { "type": "string", "minLength": 1 },
+    "target": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "What is being explained (fault event, predicted label, action plan, etc.)."
+    },
+    "uncertainty": { "type": "object", "additionalProperties": true },
+    "physics_residuals": { "type": "object", "additionalProperties": true },
+    "explanations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/explanation" }
+    },
+    "metadata": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "explanation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Examples: SubgraphAttribution, FeatureAttribution, Counterfactual."
+        },
+        "node_scores": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/entityScore" }
+        },
+        "edge_scores": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/entityScore" }
+        },
+        "feature_scores": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/featureScore" }
+        }
+      }
+    },
+    "entityScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "score"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "score": { "type": "number" }
+      }
+    },
+    "featureScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_id", "feature", "score"],
+      "properties": {
+        "entity_id": { "type": "string", "minLength": 1 },
+        "feature": { "type": "string", "minLength": 1 },
+        "score": { "type": "number" }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,36 @@
+flowchart TB
+  subgraph Upstreams["Upstream simulators / tools (cloned under ../upstreams)"]
+    OpenDSS["OpenDSS\n(distribution, unbalanced, DER, harmonics)"]
+    GridLABD["GridLAB-D\n(time-domain / behavioral distribution)"]
+    Panda["pandapower\n(Python PF/SC/optimization)"]
+    Matpower["MATPOWER\n(transmission PF/OPF; MATLAB/Octave)"]
+  end
+
+  subgraph Canon["Canonical layer"]
+    GridGraph["Unified GridGraph\n(versioned topology + state)"]
+    Contracts["Contracts\n(schemas + validation)"]
+  end
+
+  subgraph Adapters["Adapters (normalize ↔ project ↔ extract)"]
+    A_DSS["OpenDSS Adapter"]
+    A_GLD["GridLAB-D Adapter"]
+    A_PP["pandapower Adapter"]
+    A_MP["MATPOWER/Octave Adapter"]
+  end
+
+  subgraph Federation["Optional co-simulation federation"]
+    HELICS["HELICS\n(time synchronization + pub/sub)\n(T↔D boundary exchange)"]
+  end
+
+  OpenDSS --> A_DSS --> GridGraph
+  GridLABD --> A_GLD --> GridGraph
+  Panda --> A_PP --> GridGraph
+  Matpower --> A_MP --> GridGraph
+
+  Contracts --- GridGraph
+
+  A_GLD -. "can federate" .-> HELICS
+  A_DSS -. "can federate" .-> HELICS
+  A_MP -. "can federate" .-> HELICS
+  A_PP -. "typically internal" .-> HELICS
+

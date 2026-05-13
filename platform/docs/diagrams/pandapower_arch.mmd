@@ -1,0 +1,5 @@
+flowchart TB
+  Build["Build / Load pp.net\n(pandas DataFrames)"] --> Solver["runpp / rundcpp\n(NR / DC / optional C++ solvers)"]
+  Solver --> Res["res_bus / res_line / res_trafo\n(results tables)"]
+  Res --> Adapter["dt-sim-pandapower\n(map ↔ GridGraph)"]
+

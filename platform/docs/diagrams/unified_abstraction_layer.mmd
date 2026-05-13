@@ -1,0 +1,54 @@
+flowchart LR
+  subgraph Contracts["dt-contracts (canonical contracts)"]
+    GG["GridGraphSnapshot\n(topology + static attrs + dynamic attrs)"]
+    TT["TelemetryTick\n(measurements + events)"]
+    AP["ActionPlan\n(switching + setpoints)"]
+    XP["ExplanationPacket\n(subgraph + signal attributions + physics residuals)"]
+  end
+
+  subgraph Orchestrator["dt-orchestrator (near-real-time loop)"]
+    Store["GridGraphStore\n(versioned topology + state)"]
+    Tick["Realtime Tick\n(ingest→update→sim→ML→publish)"]
+    API["FastAPI + WebSocket\n(operator feed)"]
+  end
+
+  subgraph SimAdapters["Simulator adapters"]
+    PP["dt-sim-pandapower\nfast PF per tick"]
+    MP["dt-sim-matpower\nPF/OPF validation (Octave)"]
+    DSS["dt-sim-opendss\nunbalanced fidelity (selective)"]
+    GLD["dt-sim-gridlabd\ntime-domain behavior (selective)"]
+  end
+
+  subgraph ML["dt-ml"]
+    GNN["Physics-informed Temporal GNN\n(topology-aware)"]
+    XAI["XAI explainers\n(Captum + subgraph explainers)"]
+  end
+
+  subgraph Agent["dt-restoration-agent"]
+    Plan["Constrained restoration planning\n(shadow-mode advisory)"]
+  end
+
+  TT --> Tick
+  GG --> Store
+  Store --> Tick
+  Tick --> API
+
+  Tick --> PP
+  Tick --> MP
+  Tick --> DSS
+  Tick --> GLD
+
+  PP --> Store
+  MP --> Store
+  DSS --> Store
+  GLD --> Store
+
+  Store --> GNN
+  GNN --> XAI
+  XAI --> XP
+  XP --> API
+
+  Store --> Plan
+  Plan --> AP
+  AP --> Tick
+

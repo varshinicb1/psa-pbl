@@ -1,0 +1,7 @@
+flowchart TB
+  GLM["GLM model\n(objects + properties)"] --> Sim["GridLAB-D core\n(event-driven / time-stepped)"]
+  Sim --> Outputs["Outputs:\nTapes/logs\nProperty exports"]
+  Sim --> HELICS["Optional HELICS federate\n(GLD_USE_HELICS=ON)"]
+  Outputs --> Adapter["dt-sim-gridlabd\n(map ↔ GridGraph)"]
+  HELICS --> Adapter
+

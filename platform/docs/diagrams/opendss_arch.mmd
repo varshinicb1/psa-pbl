@@ -1,0 +1,7 @@
+flowchart TB
+  CLI["OpenDSS command interface\n(.dss scripts)"] --> Engine["OpenDSS Engine\n(circuit model + solver)"]
+  Engine --> Solve["Solve (snapshot / time-series / harmonic modes)"]
+  Solve --> Results["Results:\nBus voltages (per-phase)\nElement powers/currents\nLosses\nMonitors/Meters"]
+  Results --> API["Python/COM bridge\n(OpenDSSDirect.py / COM)"]
+  API --> Adapter["dt-sim-opendss adapter\n(map ↔ GridGraph)"]
+
