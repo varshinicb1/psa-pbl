@@ -1,0 +1,12 @@
+[submodule "upstreams/OpenDSS"]
+	path = upstreams/OpenDSS
+	url = https://github.com/tshort/OpenDSS.git
+[submodule "upstreams/gridlab-d"]
+	path = upstreams/gridlab-d
+	url = https://github.com/gridlab-d/gridlab-d.git
+[submodule "upstreams/matpower"]
+	path = upstreams/matpower
+	url = https://github.com/MATPOWER/matpower.git
+[submodule "upstreams/pandapower"]
+	path = upstreams/pandapower
+	url = https://github.com/e2nIEE/pandapower.git
