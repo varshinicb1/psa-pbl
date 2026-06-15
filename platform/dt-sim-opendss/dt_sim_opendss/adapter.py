@@ -1,24 +1,14 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Optional
 
 from dt_contracts.models import GridGraphSnapshot
+from dt_contracts.utils import utc_now_iso, stable_hash
 
 
 class OpenDSSBackendUnavailable(RuntimeError):
     pass
-
-
-def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-def _stable_hash(obj: object) -> str:
-    raw = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    return hashlib.sha256(raw).hexdigest()
 
 
 @dataclass
@@ -73,10 +63,10 @@ class OpenDSSAdapter:
         - create edges for lines/transformers/switches
         - fill static/dynamic fields and external_refs
         """
-        t = t or _utc_now_iso()
+        t = t or utc_now_iso()
         # Even for the skeleton snapshot, emit a deterministic topology_hash so that downstream
         # components can rely on the contract shape.
-        topology_hash = _stable_hash(
+        topology_hash = stable_hash(
             {
                 "engine_projection": "opendss",
                 "grid_id": self.config.grid_id,

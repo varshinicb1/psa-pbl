@@ -1,24 +1,13 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
 
 import pandapower as pp
 import pandapower.networks as ppnw
 
 from dt_contracts.models import ExternalRef, GridEdge, GridGraphSnapshot, GridNode, SCHEMA_VERSION
-
-
-def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def _stable_hash(obj: Any) -> str:
-    raw = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    return hashlib.sha256(raw).hexdigest()
+from dt_contracts.utils import utc_now_iso, stable_hash
 
 
 @dataclass(frozen=True)
@@ -51,7 +40,7 @@ class PandapowerAdapter:
     # Mapping: pandapowerNet -> GridGraph
     # -------------------------------
     def gridgraph_from_net(self, net: pp.pandapowerNet, *, t: str | None = None, topology_version: int = 0) -> GridGraphSnapshot:
-        t = t or _utc_now_iso()
+        t = t or utc_now_iso()
 
         nodes: List[GridNode] = []
         edges: List[GridEdge] = []
@@ -156,7 +145,7 @@ class PandapowerAdapter:
             "bus": [(n.id, n.static.get("vn_kv")) for n in nodes],
             "edge": [(e.id, e.type, e.source, e.target) for e in edges],
         }
-        topo_hash = _stable_hash(topology_material)
+        topo_hash = stable_hash(topology_material)
 
         return GridGraphSnapshot(
             schema_version=SCHEMA_VERSION,
