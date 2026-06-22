@@ -1,7 +1,8 @@
 """
-Demo run: IEEE-14 bus system with synthetic load perturbations.
+Demo run: IEEE-14 or BESCOM Bangalore grid simulation.
 
 Runs 5 ticks of near-real-time simulation and reports anomalies.
+Use `--bescom` flag to run the BESCOM Bangalore grid model.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from pathlib import Path
 
 # Setup paths and logging
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))  # Add parent for dt_contracts
 
 from dt_contracts.logging_config import setup_logging, get_logger
 
@@ -34,12 +36,15 @@ from dt_orchestrator.pipelines.realtime_tick import RealtimeTickRunner
 
 def main() -> None:
     """Run demo simulation."""
-    logger.info("Starting Grid Digital Twin Demo")
-    logger.info("Simulating IEEE-14 with synthetic load perturbations")
+    use_bescom = "--bescom" in sys.argv
+
+    grid_name = "BESCOM Bangalore" if use_bescom else "IEEE-14"
+    logger.info(f"Starting Grid Digital Twin Demo: {grid_name}")
+    logger.info(f"Simulating {grid_name} grid")
 
     try:
-        runner = RealtimeTickRunner()
-        logger.info("Runner initialized successfully")
+        runner = RealtimeTickRunner(grid_type="bescom" if use_bescom else "ieee14")
+        logger.info(f"Runner initialized ({grid_name})")
 
         for tick_num in range(5):
             try:
@@ -55,8 +60,9 @@ def main() -> None:
 
                 # Report anomalies if detected
                 if out.explanation:
+                    expl_types = [e.type for e in out.explanation.explanations]
                     logger.warning(
-                        f"Anomaly detected: {out.explanation.event_type}"
+                        f"Anomaly detected: {', '.join(expl_types) if expl_types else 'unknown'}"
                     )
                     logger.debug(
                         f"Details: {json.dumps(out.explanation.model_dump(), indent=2)[:200]}"

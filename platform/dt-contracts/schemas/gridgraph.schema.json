@@ -7,31 +7,25 @@
   "required": ["schema_version", "t", "topology_hash", "topology_version", "nodes", "edges"],
   "properties": {
     "schema_version": { "type": "string", "minLength": 1 },
-    "t": {
-      "description": "Snapshot event-time in ISO-8601 (UTC recommended).",
-      "type": "string",
-      "minLength": 1
-    },
+    "t": { "type": "string", "minLength": 1 },
     "topology_hash": { "type": "string", "minLength": 1 },
     "topology_version": { "type": "integer", "minimum": 0 },
-    "metadata": {
-      "type": "object",
-      "additionalProperties": true
-    },
-    "nodes": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/node" }
-    },
-    "edges": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/edge" }
-    }
+    "tick_count": { "type": "integer", "minimum": 0 },
+    "metadata": { "type": "object", "additionalProperties": true },
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
   },
   "$defs": {
-    "kv": {
+    "kv": { "type": "object", "additionalProperties": true },
+    "geoCoord": {
       "type": "object",
-      "description": "Flexible attribute bag (static or dynamic).",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "required": ["latitude", "longitude"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "altitude_m": { "type": "number" }
+      }
     },
     "externalRef": {
       "type": "object",
@@ -41,8 +35,8 @@
         "engine": { "type": "string", "minLength": 1 },
         "object_type": { "type": "string", "minLength": 1 },
         "object_name": { "type": "string", "minLength": 1 },
-        "terminal": { "type": "string" },
-        "phase": { "type": "string" }
+        "terminal": { "type": ["string", "null"] },
+        "phase": { "type": ["string", "null"] }
       }
     },
     "node": {
@@ -51,16 +45,13 @@
       "required": ["id", "type"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
-        "type": {
-          "type": "string",
-          "description": "Examples: BusTerminal, Bus, Transformer, DER, Generator, Breaker, Relay, PMU, Substation."
-        },
+        "type": { "type": "string" },
         "static": { "$ref": "#/$defs/kv" },
         "dynamic": { "$ref": "#/$defs/kv" },
-        "external_refs": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/externalRef" }
-        }
+        "external_refs": { "type": "array", "items": { "$ref": "#/$defs/externalRef" } },
+        "coordinates": { "oneOf": [{ "$ref": "#/$defs/geoCoord" }, { "type": "null" }] },
+        "substation_id": { "type": ["string", "null"] },
+        "zone": { "type": ["string", "null"] }
       }
     },
     "edge": {
@@ -69,20 +60,13 @@
       "required": ["id", "type", "source", "target"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
-        "type": {
-          "type": "string",
-          "description": "Examples: Line, Transformer, Switch, ProtectionDevice, MeasurementOf, Containment."
-        },
+        "type": { "type": "string" },
         "source": { "type": "string", "minLength": 1 },
         "target": { "type": "string", "minLength": 1 },
         "static": { "$ref": "#/$defs/kv" },
         "dynamic": { "$ref": "#/$defs/kv" },
-        "external_refs": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/externalRef" }
-        }
+        "external_refs": { "type": "array", "items": { "$ref": "#/$defs/externalRef" } }
       }
     }
   }
 }
-

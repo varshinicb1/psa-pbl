@@ -1,0 +1,15 @@
+# SCADA Protocol Adapters
+# Install based on your protocol needs:
+# pip install dt-scada[dnp3]  or  dt-scada[iec61850]
+
+# Core
+pydantic>=2.0.0
+
+# DNP3 (pydnp3 - optional)
+# pydnp3>=1.0.0
+
+# IEC 61850 (pyiec61850 - optional)
+# pyiec61850>=1.0.0
+
+# SCL file parsing
+# lxml>=4.9.0

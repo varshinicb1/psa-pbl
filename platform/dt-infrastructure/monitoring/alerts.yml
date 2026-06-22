@@ -1,0 +1,39 @@
+groups:
+  - name: grid_digital_twin_alerts
+    interval: 30s
+    rules:
+      - alert: OrchestratorDown
+        expr: up{job="dt-orchestrator"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Grid Digital Twin Orchestrator is down"
+          description: "The orchestrator has been unreachable for more than 1 minute."
+
+      - alert: HighTickFailureRate
+        expr: rate(dt_ticks_failed[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High tick failure rate detected"
+          description: "More than 10% of ticks are failing."
+
+      - alert: ZeroTickProgress
+        expr: dt_last_tick == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No ticks being processed"
+          description: "The simulation loop has not produced any ticks."
+
+      - alert: WebSocketClientSurge
+        expr: dt_ws_clients > 50
+        for: 1m
+        labels:
+          severity: info
+        annotations:
+          summary: "High WebSocket connection count"
+          description: "More than 50 WebSocket clients connected."

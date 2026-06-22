@@ -62,6 +62,14 @@ def bootstrap_local_paths(repo_root: Optional[pathlib.Path] = None) -> pathlib.P
         platform_dir / "dt-contracts" / "python" / "src",
         platform_dir / "dt-sim-pandapower",
         platform_dir / "dt-orchestrator",
+        platform_dir / "dt-ml",
+        platform_dir / "dt-scada-protocols" / "src",
+        platform_dir / "dt-compliance" / "src",
+        platform_dir / "dt-cim" / "src",
+        platform_dir / "dt-bescom" / "src",
+        platform_dir / "dt_security",
+        platform_dir / "dt-dataset-factory",
+        platform_dir / "dt-restoration-agent",
     ]
 
     for path in paths_to_add:

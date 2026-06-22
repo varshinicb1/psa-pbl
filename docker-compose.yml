@@ -1,0 +1,92 @@
+services:
+  orchestrator:
+    build:
+      context: platform
+      dockerfile: Dockerfile
+    container_name: dt-orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      - DT_LOG_LEVEL=INFO
+      - DT_SIM_TICK_INTERVAL_SECONDS=1.0
+      - DT_SIM_VOLTAGE_LOWER_BOUND=0.95
+      - DT_SIM_VOLTAGE_UPPER_BOUND=1.05
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - dt-network
+
+  dashboard:
+    build:
+      context: platform/dt-dashboard
+      dockerfile: Dockerfile
+    container_name: dt-dashboard
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE=/api
+      - VITE_WS_PATH=/ws
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    networks:
+      - dt-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: dt-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - dt-network
+
+  prometheus:
+    image: prom/prometheus:v2.54
+    container_name: dt-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./dt-infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    networks:
+      - dt-network
+
+  grafana:
+    image: grafana/grafana:11.3
+    container_name: dt-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - dt-network
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  dt-network:
+    driver: bridge

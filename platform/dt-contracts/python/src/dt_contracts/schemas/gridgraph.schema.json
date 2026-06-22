@@ -10,12 +10,23 @@
     "t": { "type": "string", "minLength": 1 },
     "topology_hash": { "type": "string", "minLength": 1 },
     "topology_version": { "type": "integer", "minimum": 0 },
+    "tick_count": { "type": "integer", "minimum": 0 },
     "metadata": { "type": "object", "additionalProperties": true },
     "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
     "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
   },
   "$defs": {
     "kv": { "type": "object", "additionalProperties": true },
+    "geoCoord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latitude", "longitude"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "altitude_m": { "type": "number" }
+      }
+    },
     "externalRef": {
       "type": "object",
       "additionalProperties": false,
@@ -24,8 +35,8 @@
         "engine": { "type": "string", "minLength": 1 },
         "object_type": { "type": "string", "minLength": 1 },
         "object_name": { "type": "string", "minLength": 1 },
-        "terminal": { "type": "string" },
-        "phase": { "type": "string" }
+        "terminal": { "type": ["string", "null"] },
+        "phase": { "type": ["string", "null"] }
       }
     },
     "node": {
@@ -37,7 +48,10 @@
         "type": { "type": "string" },
         "static": { "$ref": "#/$defs/kv" },
         "dynamic": { "$ref": "#/$defs/kv" },
-        "external_refs": { "type": "array", "items": { "$ref": "#/$defs/externalRef" } }
+        "external_refs": { "type": "array", "items": { "$ref": "#/$defs/externalRef" } },
+        "coordinates": { "oneOf": [{ "$ref": "#/$defs/geoCoord" }, { "type": "null" }] },
+        "substation_id": { "type": ["string", "null"] },
+        "zone": { "type": ["string", "null"] }
       }
     },
     "edge": {
@@ -56,4 +70,3 @@
     }
   }
 }
-
