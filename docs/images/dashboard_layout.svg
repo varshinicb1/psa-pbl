@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="796.925pt" height="490.0775pt" viewBox="0 0 796.925 490.0775" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-06-22T22:08:29.412938</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.9, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 490.0775 
+L 796.925 490.0775 
+L 796.925 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 19.685 89.2535 
+L 778.565 89.2535 
+Q 784.145 89.2535 784.145 83.7095 
+L 784.145 50.4455 
+Q 784.145 44.9015 778.565 44.9015 
+L 19.685 44.9015 
+Q 14.105 44.9015 14.105 50.4455 
+L 14.105 83.7095 
+Q 14.105 89.2535 19.685 89.2535 
+z
+" clip-path="url(#pa87afbbf9c)" style="fill: #1e293b; stroke: #334155; stroke-width: 1.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 19.685 189.0455 
+L 270.785 189.0455 
+Q 276.365 189.0455 276.365 183.5015 
+L 276.365 139.1495 
+Q 276.365 133.6055 270.785 133.6055 
+L 19.685 133.6055 
+Q 14.105 133.6055 14.105 139.1495 
+L 14.105 183.5015 
+Q 14.105 189.0455 19.685 189.0455 
+z
+" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #059669; stroke-width: 1.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 19.685 505.0535 
+L 270.785 505.0535 
+Q 276.365 505.0535 276.365 499.5095 
+L 276.365 333.1895 
+Q 276.365 327.6455 270.785 327.6455 
+L 19.685 327.6455 
+Q 14.105 327.6455 14.105 333.1895 
+L 14.105 499.5095 
+Q 14.105 505.0535 19.685 505.0535 
+z
+" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #1a56db; stroke-width: 1.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 287.525 189.0455 
+L 538.625 189.0455 
+Q 544.205 189.0455 544.205 183.5015 
+L 544.205 139.1495 
+Q 544.205 133.6055 538.625 133.6055 
+L 287.525 133.6055 
+Q 281.945 133.6055 281.945 139.1495 
+L 281.945 183.5015 
+Q 281.945 189.0455 287.525 189.0455 
+z
+" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #7c3aed; stroke-width: 1.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 287.525 505.0535 
+L 538.625 505.0535 
+Q 544.205 505.0535 544.205 499.5095 
+L 544.205 333.1895 
+Q 544.205 327.6455 538.625 327.6455 
+L 287.525 327.6455 
+Q 281.945 327.6455 281.945 333.1895 
+L 281.945 499.5095 
+Q 281.945 505.0535 287.525 505.0535 
+z
+" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #7c3aed; stroke-width: 1.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 555.365 349.8215 
+L 778.565 349.8215 
+Q 784.145 349.8215 784.145 344.2775 
+L 784.145 105.8855 
+Q 784.145 100.3415 778.565 100.3415 
+L 555.365 100.3415 
+Q 549.785 100.3415 549.785 105.8855 
+L 549.785 344.2775 
+Q 549.785 349.8215 555.365 349.8215 
+z
+" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #dc2626; stroke-width: 1.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Computer Modern Typewriter', 'Andale Mono', 'Nimbus Mono L', 'Courier New', 'Courier', 'Fixed', 'Terminal', monospace; text-anchor: middle; fill: #ffffff" x="399.125" y="69.459687" transform="rotate(-0 399.125 69.459687)">StatusBar -- Grid: BESCOM Bangalore | Ticks: 1,247 | System: Online</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 8px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: middle; fill: #334155" x="145.235" y="163.43925" transform="rotate(-0 145.235 163.43925)">QuickStats -- Buses: 50 | Lines: 37 | Load: 1,750 MW</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 8px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: middle; fill: #334155" x="145.235" y="418.500125" transform="rotate(-0 145.235 418.500125)">TopologyMap -- SVG Grid Topology with Real-Time Voltage Coloring</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 8px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: middle; fill: #334155" x="413.075" y="163.476125" transform="rotate(-0 413.075 163.476125)">VoltageChart -- Per-Unit Voltage per Bus with Threshold Bands</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 8px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: middle; fill: #334155" x="413.075" y="418.500125" transform="rotate(-0 413.075 418.500125)">TimelineChart -- Tick History with Anomaly Markers</text>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: middle; fill: #dc2626" x="666.965" y="208.365781" transform="rotate(-0 666.965 208.365781)">AnomalyPanel</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; fill: #475569" transform="translate(597.738828 238.431484)">WARNING: Voltage Violation at Bus 14</text>
+    <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; fill: #475569" transform="translate(601.430781 246.369484)">  vm_pu = 0.932 (1.9% below bound)</text>
+    <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; fill: #475569" transform="translate(631.278125 254.402641)">  Confidence: 94.2%</text>
+   </g>
+   <g id="patch_8">
+    <path d="M 594.425 460.7015 
+L 761.825 460.7015 
+Q 767.405 460.7015 767.405 455.1575 
+L 767.405 371.9975 
+Q 767.405 366.4535 761.825 366.4535 
+L 594.425 366.4535 
+Q 588.845 366.4535 588.845 371.9975 
+L 588.845 455.1575 
+Q 588.845 460.7015 594.425 460.7015 
+z
+" clip-path="url(#pa87afbbf9c)" style="fill: #f8fafc; stroke-dasharray: 3.7,1.6; stroke-dashoffset: 0; stroke: #94a3b8; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; fill: #64748b" transform="translate(651.751953 411.540062)">NodeInspector</text>
+    <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; fill: #64748b" transform="translate(635.440859 419.378531)">(Overlay on Node Click)</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: middle" x="399.125" y="19.3575" transform="rotate(-0 399.125 19.3575)">Metro Grid Digital Twin -- Operations Dashboard Layout</text>
+   </g>
+   <g id="legend_1">
+    <g id="patch_9">
+     <path d="M 254.475469 479.3775 
+L 543.774531 479.3775 
+Q 545.174531 479.3775 545.174531 477.9775 
+L 545.174531 468.303281 
+Q 545.174531 466.903281 543.774531 466.903281 
+L 254.475469 466.903281 
+Q 253.075469 466.903281 253.075469 468.303281 
+L 253.075469 477.9775 
+Q 253.075469 479.3775 254.475469 479.3775 
+z
+" style="fill: #ffffff; opacity: 0.9; stroke: #cbd5e1; stroke-linejoin: miter"/>
+    </g>
+    <g id="patch_10">
+     <path d="M 255.875469 475.022187 
+L 269.875469 475.022187 
+L 269.875469 470.122187 
+L 255.875469 470.122187 
+z
+" style="fill: #ffffff; stroke: #059669; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_10">
+     <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: start" x="275.475469" y="475.022187" transform="rotate(-0 275.475469 475.022187)">Stats Panel</text>
+    </g>
+    <g id="patch_11">
+     <path d="M 329.345937 475.022187 
+L 343.345937 475.022187 
+L 343.345937 470.122187 
+L 329.345937 470.122187 
+z
+" style="fill: #ffffff; stroke: #1a56db; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_11">
+     <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: start" x="348.945938" y="475.022187" transform="rotate(-0 348.945938 475.022187)">Topology Map</text>
+    </g>
+    <g id="patch_12">
+     <path d="M 412.918281 475.022187 
+L 426.918281 475.022187 
+L 426.918281 470.122187 
+L 412.918281 470.122187 
+z
+" style="fill: #ffffff; stroke: #7c3aed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_12">
+     <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: start" x="432.518281" y="475.022187" transform="rotate(-0 432.518281 475.022187)">Charts</text>
+    </g>
+    <g id="patch_13">
+     <path d="M 470.307344 475.022187 
+L 484.307344 475.022187 
+L 484.307344 470.122187 
+L 470.307344 470.122187 
+z
+" style="fill: #ffffff; stroke: #dc2626; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_13">
+     <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; text-anchor: start" x="489.907344" y="475.022187" transform="rotate(-0 489.907344 475.022187)">Anomaly Panel</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pa87afbbf9c">
+   <rect x="8.525" y="39.3575" width="781.2" height="443.52"/>
+  </clipPath>
+ </defs>
+</svg>
