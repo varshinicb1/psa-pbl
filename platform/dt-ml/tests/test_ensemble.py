@@ -1,4 +1,16 @@
+"""Tests for the ensemble ML detector."""
+
 from __future__ import annotations
+
+import pathlib
+import sys
+
+# Bootstrap paths for local development
+_repo_root = pathlib.Path(__file__).resolve().parents[3]
+for _mod in ["dt-ml", "dt-contracts/python/src"]:
+    _p = str(_repo_root / "platform" / _mod)
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import pytest
 from dt_ml.ensemble import EnsembleDetector

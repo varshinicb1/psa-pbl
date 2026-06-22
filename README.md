@@ -2,161 +2,434 @@
 
 [![Python 3.14+](https://img.shields.io/badge/Python-3.14%2B-00cec9)](https://python.org)
 [![TypeScript 5.x](https://img.shields.io/badge/TypeScript-5.x-0984e3)](https://typescriptlang.org)
-[![Tests: 139](https://img.shields.io/badge/Tests-139-6c5ce7)](https://github.com/varshinicb1/psa-pbl)
-[![Coverage: 100%](https://img.shields.io/badge/Coverage-100%25-00b894)](https://github.com/varshinicb1/psa-pbl)
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-636e72)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-139-6c5ce7)](https://github.com/varshinicb1/psa-pbl)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-**Production-grade digital twin for metropolitan power grid operations.** Real-time simulation, ML-based anomaly detection, SCADA protocol integration, and a world-class operations dashboard — built for the BESCOM Bangalore metropolitan grid.
-
----
-
-## Architecture
-
-![System Architecture](docs/images/architecture.png)
-
-The platform consists of **16 Python/TypeScript modules** across four layers:
-
-| Layer | Modules | Purpose |
-|-------|---------|---------|
-| **Core** | `dt-contracts`, `dt-orchestrator` | Canonical schemas, API server, tick loop |
-| **Simulation** | `dt-sim-pandapower`, `dt-sim-opendss`, `dt-sim-matpower`, `dt-sim-gridlabd`, `dt-bescom`, `dt-cim` | AC powerflow (4 simulators) + BESCOM 50-bus model |
-| **ML & SCADA** | `dt-ml`, `dt-scada` (IEC 61850, DNP3, Modbus) | 4-detector ensemble + real protocol stack |
-| **Infrastructure** | `dt-dashboard`, `dt-compliance`, `dt-security`, `dt-infrastructure` | React UI, NERC CIP/IEGC, RBAC, k8s |
+**Production-grade digital twin for metropolitan power grid operations.** Real-time simulation, ML-based anomaly detection, SCADA protocol integration (IEC 61850, DNP3, Modbus), and a world-class operations dashboard — built for the **BESCOM Bangalore** 50-bus metropolitan grid.
 
 ---
 
-## Key Capabilities
+## Table of Contents
 
-### ⚡ Real-Time Grid Operations
-- **Sub-100ms tick execution** — AC powerflow + ML inference per tick
-- **WebSocket streaming** — Push to N operators simultaneously
-- **Two grid backends**: IEEE-14 (test) and BESCOM Bangalore (50-bus production)
-- **Prometheus metrics** at `/metrics/prometheus`
-
-### 🧠 ML-Powered Anomaly Detection
-| Detector | Method | Purpose |
-|----------|--------|---------|
-| Physics Rule | Hard voltage/loading bounds | Instant violation alerts |
-| Statistical Z-Score | Moving window (n=20) | Trend deviation detection |
-| Rate-of-Change | Step change trigger | Transient detection |
-| LSTM Predictor | Sequence model | Look-ahead warnings |
-
-### 🔌 Real SCADA Protocol Stack
-
-![Pipeline](docs/images/pipeline.png)
-
-| Protocol | Implementation | Status |
-|----------|---------------|--------|
-| **IEC 61850** | GOOSE subscriber (AF_PACKET/UDP) + MMS client (TCP/TPKT) + ASN.1 BER decoder + SCL/CID parser | Production |
-| **DNP3** | Pure Python spec-compliant stack: link layer (0x0564 magic, CRC-16/A6BC), transport segmentation, application layer (read/control) | Production |
-| **Modbus** | Async TCP master via pymodbus 3.13+ | Production |
-
-### 🗺️ Operations Dashboard
-
-![Dashboard Layout](docs/images/dashboard_layout.png)
-
-- **8 React components**: StatusBar, QuickStats, TopologyMap, VoltageChart, AnomalyPanel, TimelineChart, NodeInspector, ErrorBoundary
-- SVG topology map with real-time voltage coloring
-- WebSocket feed with exponential backoff reconnection
-- Dark theme, responsive 3-col → 2-col → 1-col breakpoints
-- Production build: **234 kB** total (Docker: 583 kB nginx-alpine)
-
-### 🔒 Compliance & Security
-![Compliance](docs/images/compliance.png)
-
-- **NERC CIP**: CIP-002 through CIP-014 (10 requirements)
-- **Indian Grid Code IEGC 2023**: 7 grid checks (49.90-50.05 Hz band, voltage regulation, reactive power)
-- **AES-256-GCM**: Data-at-rest encryption with key rotation (10-key history)
-- **RBAC**: 5 roles (viewer/operator/engineer/admin/system) + HMAC-SHA256 API keys
-- **Audit**: Immutable logging (10,000-entry limit)
+- [Quick Install](#-quick-install)
+- [Project Architecture](#-project-architecture)
+- [Module Reference](#-module-reference)
+- [Running the Project](#-running-the-project)
+- [Testing](#-testing)
+- [Automatic Commit & Push](#-automatic-commit--push)
+- [Contributing](#-contributing)
+- [Docker Deployment](#-docker-deployment)
+- [Environment Variables](#-environment-variables)
+- [API Reference](#-api-reference)
+- [License](#-license)
 
 ---
 
-## BESCOM Bangalore Grid Model
+## 🚀 Quick Install
 
-![BESCOM Network](docs/images/bescom_network.png)
+### Prerequisites
 
-| Property | Value |
-|----------|-------|
-| Buses | 50 (5×400kV, 15×220kV, 30×66kV) |
-| Lines | 37 (overhead + underground) |
-| Transformers | 63 (400/220kV + 220/66kV) |
-| Loads | 30 (1,750 MW rated) |
-| External Grid Infeeds | 3 (PGClL, KPCL, solar/wind) |
-| Peak Load | 8,472 MW (real BESCOM data) |
+| Tool | Version | Check |
+|------|---------|-------|
+| Python | 3.10+ (3.14 recommended) | `python --version` |
+| Node.js | 22+ | `node --version` |
+| npm | 10+ | `npm --version` |
+| Git | Any recent | `git --version` |
 
----
-
-## Quick Start
+### 1. Clone the Repository
 
 ```bash
-# 1. Install
+git clone https://github.com/varshinicb1/psa-pbl.git
+cd psa-pbl
+```
+
+### 2. Python Setup (Virtual Environment)
+
+**Windows (PowerShell):**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+**Windows (CMD):**
+```cmd
+python -m venv venv
+venv\Scripts\activate
+```
+
+**macOS / Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Python Dependencies
+
+```bash
+# Production dependencies
+pip install -r platform/dt-orchestrator/requirements.txt
+
+# Development dependencies (testing, linting, docs)
 pip install -r platform/dt-orchestrator/requirements-dev.txt
-pip install pymodbus pytest
 
-# 2. Run demo (IEEE-14, 5 ticks)
+# Additional runtime dependencies
+pip install numpy pandapower pymodbus
+```
+
+### 4. Install Dashboard Dependencies
+
+```bash
+cd platform/dt-dashboard
+npm install
+cd ../../
+```
+
+### 5. Install Pre-commit Hooks (Optional but Recommended)
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+---
+
+## 🏗 Project Architecture
+
+### System Overview
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    dt-orchestrator (FastAPI)                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
+│  │ Bootstrap │→│ Tick Loop│→│Powerflow │→│ ML Detection     │  │
+│  │ (paths)   │  │(asyncio) │  │(adapter) │  │(Physics + ML)   │  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────┬─────────┘  │
+│                                                      │             │
+│  ┌───────────────────────────────────────────────────▼──────────┐  │
+│  │              Publish (REST + WebSocket)                       │  │
+│  │  /health  /snapshot  /topology  /history  /ws  /metrics      │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────────────┐
+│                    dt-dashboard (React + Vite + D3)                  │
+│  StatusBar │ QuickStats │ TopologyMap │ VoltageChart                │
+│  AnomalyPanel │ TimelineChart │ NodeInspector │ ErrorBoundary       │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│  Simulator Adapters                    SCADA / Compliance         │
+│  ┌──────────┐ ┌────────┐ ┌─────────┐  ┌──────────┐ ┌──────────┐ │
+│  │Pandapower│ │OpenDSS │ │MATPOWER │  │IEC 61850 │ │NERC CIP  │ │
+│  │ (Active) │ │(Skel.) │ │(Skel.)  │  │ DNP3     │ │IEGC 2023 │ │
+│  └──────────┘ └────────┘ └─────────┘  │ Modbus   │ │AES-256   │ │
+│  ┌──────────┐ ┌────────┐              └──────────┘ └──────────┘ │
+│  │GridLAB-D │ │BESCOM  │                                        │
+│  │ (Skel.)  │ │ (50bus)│  ┌──────────────┐  ┌───────────────┐  │
+│  └──────────┘ └────────┘  │  ML Ensemble  │  │ Restoration   │  │
+│                           │ Z-Score / ROC  │  │ Agent (Advisor)│  │
+│                           │ LSTM / Physics │  └───────────────┘  │
+│                           └────────────────┘                     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow (Per Tick)
+
+```
+Telemetry Ingestion → Powerflow (pandapower) → State Update
+    → ML Anomaly Detection (4-detector ensemble)
+    → Explanation Generation → Publish (WebSocket)
+```
+
+### Grid Backends
+
+| Grid | Buses | Lines | Transformers | Purpose |
+|------|-------|-------|-------------|---------|
+| **IEEE-14** (default) | 14 | 20 | 3 | Testing & development |
+| **BESCOM Bangalore** | 50 | 37 | 63 | Production metropolitan grid |
+
+---
+
+## 📦 Module Reference
+
+All modules live under `platform/`:
+
+| Module | Status | Description |
+|--------|--------|-------------|
+| `dt-orchestrator/` | ✅ **Production** | Central orchestrator with FastAPI server, tick loop, state store, REST/WebSocket endpoints |
+| `dt-contracts/` | ✅ **Production** | Canonical Pydantic v2 schemas (GridGraphSnapshot, TelemetryTick, ActionPlan, ExplanationPacket) |
+| `dt-sim-pandapower/` | ✅ **Production** | Primary simulator adapter — fast AC powerflow via pandapower |
+| `dt-bescom/` | ✅ **Production** | BESCOM Bangalore 50-bus grid model with real load profiles and CSV data |
+| `dt-dashboard/` | ✅ **Production** | React 19 + Vite + D3.js operations dashboard (234 kB production build) |
+| `dt-ml/` | 🟡 **Active** | 4-detector ML ensemble (Physics Rule, Z-Score, Rate-of-Change, LSTM) + RGATv2 GNN checkpoints |
+| `dt-scada-protocols/` | 🟡 **Active** | Real SCADA protocol stack — IEC 61850 (GOOSE/MMS), DNP3, Modbus |
+| `dt-compliance/` | 🟡 **Active** | NERC CIP (10 requirements), Indian Grid Code IEGC 2023 (7 checks), AES-256 encryption |
+| `dt-cim/` | 🟡 **Active** | Common Information Model adapter for utility data exchange |
+| `dt_security/` | 🟡 **Active** | RBAC (5 roles), HMAC-SHA256 API keys, immutable audit logging |
+| `dt-restoration-agent/` | 🔧 **Skeleton** | Advisory grid restoration with safety constraints |
+| `dt-sim-opendss/` | 🔧 **Skeleton** | OpenDSS adapter for distribution/unbalanced simulation |
+| `dt-sim-matpower/` | 🔧 **Skeleton** | MATPOWER adapter for transmission PF/OPF benchmarking |
+| `dt-sim-gridlabd/` | 🔧 **Skeleton** | GridLAB-D adapter for time-domain simulation |
+| `dt-dataset-factory/` | 🔧 **Skeleton** | Synthetic IEEE-14 anomaly dataset generator |
+| `dt-infrastructure/` | 🔧 **Skeleton** | Docker, Kubernetes, Prometheus/Grafana monitoring configs |
+
+---
+
+## 🎮 Running the Project
+
+### Demo (IEEE-14, 5 ticks)
+
+```bash
+# From the repo root
 python platform/dt-orchestrator/demo_run.py
+```
 
-# 3. Run demo (BESCOM Bangalore)
+### Demo (BESCOM Bangalore Grid)
+
+```bash
 python platform/dt-orchestrator/demo_run.py --bescom
+```
 
-# 4. Start API server
-$env:GRID_TYPE="bescom"
+### API Server
+
+```bash
+# IEEE-14 backend (default)
 uvicorn dt_orchestrator.api.app:app --host 127.0.0.1 --port 8000 --app-dir platform/dt-orchestrator
 
-# 5. Launch dashboard
-cd platform/dt-dashboard && npm install && npm run dev
-
-# 6. Docker (full stack)
-docker-compose -f platform/docker-compose.yml up --build
+# BESCOM backend
+GRID_TYPE=bescom uvicorn dt_orchestrator.api.app:app --host 127.0.0.1 --port 8000 --app-dir platform/dt-orchestrator
 ```
 
----
-
-## Test Suite
-
-![Test Results](docs/images/test_results.png)
+### Dashboard (Dev Mode)
 
 ```bash
-# 139 tests - 100% passing
-$env:PYTHONPATH="platform/dt-contracts/python/src;platform/dt-sim-pandapower;platform/dt-orchestrator;platform/dt-ml;platform/dt-scada-protocols/src;platform/dt-compliance/src;platform/dt-cim/src;platform/dt-bescom/src;platform/dt_security;platform"
-python -m pytest tests/ platform/dt-compliance/tests/ platform/dt-cim/tests/ platform/dt-sim-pandapower/tests/ platform/dt-bescom/tests/ -v -o "addopts=" --no-header -p no:cov
+# In a separate terminal — start the backend first
+cd platform/dt-dashboard
+npm install
+npm run dev
+```
 
-# Dashboard tests
-cd platform/dt-dashboard && npx vitest run
+The dashboard auto-proxies:
+- `/api/*` → `http://127.0.0.1:8000/*`
+- `/ws` → `ws://127.0.0.1:8000/ws`
+
+Open **http://localhost:5173** in your browser.
+
+### BESCOM Standalone Demo
+
+```bash
+cd platform/dt-bescom
+python demo_bescom.py
 ```
 
 ---
 
-## API Endpoints
+## 🧪 Testing
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check with grid type and metrics |
-| `/snapshot` | GET | Latest grid snapshot (full state) |
-| `/topology` | GET | Grid topology (nodes + edges) |
-| `/history` | GET | Tick history (param: `limit`) |
-| `/metrics/prometheus` | GET | Prometheus-format metrics |
-| `/commands/perturb` | POST | Inject load perturbation |
-| `/ws` | WS | Real-time tick stream |
+### Running All Tests
+
+```bash
+# Set PYTHONPATH for all modules
+export PYTHONPATH="platform/dt-contracts/python/src:platform/dt-sim-pandapower:platform/dt-orchestrator:platform/dt-ml:platform/dt-scada-protocols/src:platform/dt-compliance/src:platform/dt-cim/src:platform/dt-bescom/src:platform/dt_security:platform"
+
+# Run all tests
+python -m pytest platform/dt-sim-pandapower/tests/ platform/dt-ml/tests/ -v --no-header -p no:cov
+```
+
+### Test Suites
+
+| Suite | Command | Requires |
+|-------|---------|----------|
+| ML Ensemble | `pytest platform/dt-ml/tests/ -v` | numpy |
+| Pandapower | `pytest platform/dt-sim-pandapower/tests/ -v` | pandapower |
+| BESCOM | `pytest platform/dt-bescom/tests/ -v` | pandapower |
+| Compliance | `pytest platform/dt-compliance/tests/ -v` | — |
+| CIM | `pytest platform/dt-cim/tests/ -v` | — |
+| Dashboard | `cd platform/dt-dashboard && npx vitest run` | Node.js |
+
+### Code Quality Checks
+
+```bash
+# Format code
+black platform/
+
+# Lint
+ruff check platform/
+
+# Type check
+mypy platform/
+```
 
 ---
 
-## Environment Variables
+## 🤖 Automatic Commit & Push
+
+A convenience script `git-auto.sh` handles the entire commit-and-push workflow:
+
+```bash
+# Commit and push with a default timestamp message
+bash git-auto.sh
+
+# Commit and push with a custom message
+bash git-auto.sh "Your commit message here"
+```
+
+**What it does:**
+1. Stages all changes (`git add -A`)
+2. Skips if nothing to commit
+3. Shows staged file summary
+4. Commits with your message (or auto-generated timestamp)
+5. Pushes to the current branch on `origin`
+
+For Windows users who want to automate this, add the script as a scheduled task or git alias:
+
+```bash
+git config --global alias.auto '!bash git-auto.sh'
+git auto  # Now works like any git command
+```
+
+---
+
+## 👥 Contributing
+
+We welcome contributions! Here's how to get started.
+
+### Development Workflow
+
+```bash
+# 1. Create a feature branch
+git checkout -b feature/my-feature
+
+# 2. Make your changes
+
+# 3. Run tests to verify
+bash git-auto.sh test  # or pytest directly
+
+# 4. Format and lint
+black platform/
+ruff check platform/
+
+# 5. Commit and push
+bash git-auto.sh "feat(scope): description of changes"
+```
+
+### Code Standards
+
+- **Python**: Black formatter (line length 100), Ruff linter, MyPy type checker
+- **TypeScript**: Strict TypeScript config, Vitest for testing
+- **Pre-commit**: Auto-formatting on commit (install with `pre-commit install`)
+
+### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+```
+
+**Types**: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `perf`, `security`
+
+**Example:**
+```
+feat(api): add graceful WebSocket shutdown
+
+- Implement lifespan context manager for cleanup
+- Cancel background tasks on shutdown
+- Close client connections with proper timeout
+```
+
+### Pull Request Checklist
+
+- [ ] Tests pass (`pytest platform/*/tests/`)
+- [ ] Code formatted (`black platform/`)
+- [ ] Lint passes (`ruff check platform/`)
+- [ ] Types check (`mypy platform/`)
+- [ ] Pre-commit hooks pass
+- [ ] Added/updated documentation
+
+### Project Structure Guidelines
+
+- Each module is self-contained under `platform/dt-*/`
+- Shared schemas belong in `dt-contracts/`
+- Simulator adapters follow the `adapter.py` pattern
+- Tests go in `tests/` within each module
+- Use structured logging (`dt_contracts.logging_config`) not `print()`
+
+### Need Help?
+
+- Check existing module READMEs in `platform/`
+- Review this README for architecture context
+- Create a GitHub issue for questions
+
+---
+
+## 🐳 Docker Deployment
+
+### Full Stack
+
+```bash
+cd platform
+docker-compose up --build
+```
+
+This starts: Orchestrator (`:8000`), Dashboard (`:5173`), Prometheus (`:9090`), Grafana (`:3000`), Redis (`:6379`).
+
+### Individual Containers
+
+```bash
+# Build orchestrator
+docker build -f platform/Dockerfile -t dt-orchestrator:latest .
+docker run -p 8000:8000 dt-orchestrator:latest
+
+# Build dashboard (production)
+docker build -f platform/dt-dashboard/Dockerfile -t dt-dashboard:latest platform/dt-dashboard
+```
+
+---
+
+## ⚙️ Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `GRID_TYPE` | `ieee14` | Grid backend: `ieee14` or `bescom` |
 | `DT_LOG_LEVEL` | `INFO` | Logging level |
 | `DT_API_PORT` | `8000` | API server port |
-| `REDIS_HOST` | `localhost` | Redis host |
+| `DT_SIM_VOLTAGE_LOWER_BOUND` | `0.95` | Voltage anomaly lower bound (p.u.) |
+| `DT_SIM_VOLTAGE_UPPER_BOUND` | `1.05` | Voltage anomaly upper bound (p.u.) |
+| `DT_SIM_TICK_INTERVAL_SECONDS` | `1.0` | Seconds between ticks |
+| `DT_SIM_LOADING_THRESHOLD_PERCENT` | `90.0` | Line loading alarm threshold |
+| `REDIS_HOST` | `localhost` | Redis host for distributed mode |
 | `REDIS_PORT` | `6379` | Redis port |
-| `VITE_WS_HOST` | auto | WebSocket host for dashboard |
 
 ---
 
-## License
+## 📡 API Reference
 
-Proprietary — Government Utility Use. Built for BESCOM Bangalore.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check with version, uptime, grid type |
+| `/snapshot` | GET | Latest grid snapshot (full state) |
+| `/topology` | GET | Grid topology (nodes + edges) |
+| `/history?limit=100` | GET | Tick history |
+| `/metrics/prometheus` | GET | Prometheus-format metrics |
+| `/commands/perturb` | POST | Inject load perturbation |
+| `/ws` | WS | Real-time tick stream |
+
+---
+
+## 📄 License
+
+[MIT License](LICENSE) — Copyright (c) 2026 Varshini CB, Vedant, Sethu S, Aravind Kumar N
+
+---
+
+## 👥 Team
+
+- **Varshini CB**
+- **Vedant**
+- **Sethu S**
+- **Aravind Kumar N**
+
+*6th Semester Power System Analysis — Project Based Learning (PBL), 2026.*
 
 **Version 2.0.0**
