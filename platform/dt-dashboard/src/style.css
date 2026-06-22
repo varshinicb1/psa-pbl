@@ -1,14 +1,19 @@
 :root {
   color-scheme: dark;
+  /* RVCE Academic Brand Colors */
+  --rvce-blue: #003D7A;
+  --rvce-blue-bright: #005AB5;
+  --rvce-gold: #D4A01E;
+  --rvce-gold-bright: #F0C060;
   --bg-primary: #070b14;
   --bg-secondary: #0d1120;
-  --bg-panel: rgba(14, 20, 38, 0.92);
-  --bg-panel-hover: rgba(20, 28, 50, 0.95);
-  --border-color: rgba(34, 48, 74, 0.5);
-  --border-color-hover: rgba(58, 74, 106, 0.6);
+  --bg-panel: rgba(0, 30, 60, 0.88);
+  --bg-panel-hover: rgba(0, 40, 80, 0.95);
+  --border-color: rgba(0, 61, 122, 0.35);
+  --border-color-hover: rgba(212, 160, 30, 0.4);
   --text-primary: #e2e8f0;
-  --text-secondary: #7a8aa6;
-  --text-muted: #4a5a76;
+  --text-secondary: #8aa4c0;
+  --text-muted: #5a7a9a;
   --accent-green: #45d19a;
   --accent-green-dim: rgba(69, 209, 154, 0.12);
   --accent-green-glow: rgba(69, 209, 154, 0.08);
@@ -20,6 +25,8 @@
   --accent-blue: #5b9cf5;
   --accent-blue-dim: rgba(91, 156, 245, 0.12);
   --accent-purple: #a78bfa;
+  --accent-gold: #D4A01E;
+  --accent-gold-dim: rgba(212, 160, 30, 0.15);
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -86,12 +93,45 @@ body {
 
 .logo-text {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: -0.3px;
-  background: linear-gradient(135deg, #45d19a, #5b9cf5);
+  background: linear-gradient(135deg, #D4A01E, #F0C060);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.logo-subtitle {
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  font-weight: 500;
+  display: block;
+  margin-top: -2px;
+}
+
+/* RVCE Academic Footer Bar */
+.academic-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 9px;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(212, 160, 30, 0.15);
+  flex-shrink: 0;
+}
+
+.academic-footer strong {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.footer-divider {
+  width: 1px;
+  height: 10px;
+  background: var(--border-color);
 }
 
 .status-indicators {

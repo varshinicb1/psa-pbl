@@ -54,6 +54,15 @@ export default function App() {
           </div>
         </div>
         <NodeInspector node={selectedNode} onClose={handleNodeInspectorClose} />
+        <footer className="academic-footer">
+          <strong>RV College of Engineering®</strong>
+          <span className="footer-divider" />
+          <span>Dept. of Electrical Engineering</span>
+          <span className="footer-divider" />
+          <span>Power System Analysis | PBL 2026</span>
+          <span className="footer-divider" />
+          <span>Guided by Dr. Manjunatha C.</span>
+        </footer>
       </div>
     </ErrorBoundary>
   )

@@ -22,16 +22,15 @@ export const StatusBar = memo(function StatusBar({
     <header className="status-bar">
       <div className="status-left">
         <div className="logo">
-          <svg className="logo-svg" viewBox="0 0 24 24" width="22" height="22" fill="none">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="url(#lg)" />
-            <defs>
-              <linearGradient id="lg" x1="0" y1="0" x2="24" y2="24">
-                <stop offset="0%" stopColor="#45d19a" />
-                <stop offset="100%" stopColor="#5b9cf5" />
-              </linearGradient>
-            </defs>
+          {/* RVCE Academic Emblem — Book & Flame */}
+          <svg className="logo-svg" viewBox="0 0 28 28" width="24" height="24" fill="none">
+            <circle cx="14" cy="14" r="13" fill="#003D7A" stroke="#D4A01E" strokeWidth="1.5" />
+            <path d="M8 17 Q10 10 14 9 Q18 10 20 17 L20 20 Q17 16 14 18 Q11 16 8 20Z" fill="#D4A01E" />
+            <line x1="14" y1="9" x2="14" y2="18" stroke="#003D7A" strokeWidth="1.5" />
+            <path d="M12 9 Q11 6 14 4 Q17 6 16 9 Q15 7 14 8 Q13 7 12 9Z" fill="#D4A01E" />
+            <text x="14" y="25" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#D4A01E">RVCE</text>
           </svg>
-          <span className="logo-text">Metro Grid</span>
+          <span className="logo-text">RVCE Metro Grid Twin</span>
         </div>
         <div className="status-indicators">
           <span className={`indicator ${connected ? 'online' : 'offline'}`} title={connected ? 'Connected' : 'Disconnected'}>

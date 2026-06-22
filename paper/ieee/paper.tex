@@ -43,7 +43,7 @@ manjunathac@bmsit.ac.in}
 \maketitle
 
 \begin{abstract}
-We present a production-grade digital twin platform for real-time monitoring and anomaly detection in metropolitan power transmission networks. The system integrates a multi-simulator AC powerflow engine (pandapower, OpenDSS, MATPOWER, GridLAB-D), a hybrid ML ensemble detector combining physics rules with statistical methods and Graph Neural Networks, and an interactive web-based operations dashboard with real-time WebSocket streaming. The platform is validated on two test systems: the IEEE 14-bus standard and a detailed 50-bus model of the BESCOM Bangalore metropolitan transmission grid. Experimental results demonstrate sub-100ms tick execution with a 4-detector anomaly ensemble achieving an average precision of 0.92, and a physics-constrained RGATv2 GNN achieving 95.4\% node-level anomaly detection accuracy. The system supports real SCADA protocol integration (IEC~61850, DNP3, Modbus) and includes built-in compliance auditing for NERC~CIP and Indian Grid Code 2023.
+We present a production-grade digital twin platform for real-time monitoring and anomaly detection in metropolitan power transmission networks. The system integrates a multi-simulator AC powerflow engine (pandapower, OpenDSS, MATPOWER, GridLAB-D), a hybrid ML ensemble detector combining physics rules with statistical methods and Graph Neural Networks, and an interactive web-based operations dashboard with real-time WebSocket streaming. The platform is validated on two test systems: the IEEE 14-bus standard and a detailed 50-bus model of the BESCOM Bangalore metropolitan transmission grid. Experimental results demonstrate sub-100ms tick execution with a 4-detector anomaly ensemble achieving an average precision of 0.92, and a physics-constrained RGATv2 GNN with weighted oversampling achieving 72.6\% anomaly recall and an F1 score of 0.127. The system supports real SCADA protocol integration (IEC~61850, DNP3, Modbus) and includes built-in compliance auditing for NERC~CIP and Indian Grid Code 2023.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -337,25 +337,28 @@ The ML ensemble achieves an Area Under the Curve (AUC) of 0.72, demonstrating su
 
 \subsection{GNN Training Results}
 
-The RGATv2 model was trained on 12,000 labeled samples (100 scenarios $\times$ 120 ticks) with 15\% anomaly rate. Figure~\ref{fig:training_loss} shows the training and validation curves.
+The RGATv2 model was trained on 12,000 labeled samples (100 scenarios $\times$ 120 ticks) with 15\% anomaly injection rate, yielding an effective anomaly rate of approximately 5\% at node level. To address this severe class imbalance, we employed a dual strategy: \textit{(i)} class-weighted oversampling via $WeightedRandomSampler$ to balance each batch to approximately 50:50 anomaly:normal samples, and \textit{(ii)} per-sample $pos\_weight$ scaling in the focal loss function to amplify anomaly gradient signals. Figure~\ref{fig:training_loss} shows the training curves.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\columnwidth]{training_loss}
-  \caption{RGATv2 training curves. Validation loss converges to 0.537 with node-level accuracy reaching 95.4\%. The model was trained for 37 epochs with AdamW and cosine annealing.}
+  \caption{RGATv2 training with class imbalance correction. The model was trained for 28 epochs with AdamW, cosine annealing, weighted oversampling ($pos\_weight = 18.1$), and focal loss ($\gamma = 2.0$).}
   \label{fig:training_loss}
 \end{figure}
 
 Key training results:
 
 \begin{itemize}
-  \item \textbf{Best validation loss:} 0.537 at epoch~30
-  \item \textbf{Node-level accuracy:} 95.4\%
-  \item \textbf{Convergence:} Early stopping triggered at epoch~37 (patience~15)
+  \item \textbf{Best validation loss:} 1.465 at epoch~18
+  \item \textbf{Anomaly recall:} 72.6\% (up from 0\% without balancing)
+  \item \textbf{Precision:} 7.1\% (elevated false positive rate due to aggressive oversampling)
+  \item \textbf{F1 score:} 0.127 (meaningful improvement over 0.000 without balancing)
+  \item \textbf{Global accuracy:} 40.3\% (reduced from 95.4\% due to increased false positives)
+  \item \textbf{Convergence:} Early stopping triggered at epoch~28 (patience~15)
   \item \textbf{Total parameters:} 217,475 (RGATv2 backbone)
 \end{itemize}
 
-The model exhibits smooth convergence despite the class imbalance (anomaly rate $< 5\%$). The physics-informed regularization term $\mathcal{L}_{\text{phys}}$ constrains the learned representations to physically plausible regions of the voltage space, preventing the model from predicting extreme anomaly scores on nominal buses.
+The class imbalance correction successfully activated the model's anomaly detection capability---recall jumped from effectively 0\% to 72.6\%---but the aggressive double-weighting (oversampling combined with $pos\_weight = 18.1$) overcorrected, causing precision to drop to 7.1\%. This precision-recall trade-off is a well-known challenge in imbalanced learning \cite{lin_focal_2017}. Future work will explore moderated $pos\_weight$ values (2--3 instead of 18) and inference threshold tuning to improve precision. The physics-informed regularization term $\mathcal{L}_{\text{phys}}$ constrains the learned representations to physically plausible regions of the voltage space, preventing extreme anomaly scores on nominal buses.
 
 \subsection{Compliance Auditing}
 
@@ -416,7 +419,7 @@ Key achievements include:
   \item Real SCADA protocol integration (IEC~61850, DNP3, Modbus) with $< 3$~ms GOOSE latency.
 \end{itemize}
 
-The platform demonstrates that a modular digital twin architecture combining physics-based simulation, graph neural networks, and interactive visualization can provide actionable intelligence for real-time grid operations. Future work will address class imbalance in GNN training, real-time GNN inference integration, and multi-grid scalability.
+The platform demonstrates that a modular digital twin architecture combining physics-based simulation, graph neural networks, and interactive visualization can provide actionable intelligence for real-time grid operations. Future work will address GNN precision improvement through threshold tuning, real-time GNN inference integration, and multi-grid scalability.
 
 % ===================================================================
 \section*{Acknowledgment}
