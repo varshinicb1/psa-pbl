@@ -487,8 +487,25 @@ def train(args: argparse.Namespace) -> None:
     logger.info(f"Model params: {sum(p.numel() for p in model.parameters()):,}")
     logger.info(f"Imbalance: pos_ratio={pos_ratio:.4f}, pos_weight={config.pos_weight:.2f}")
 
+    # Oversample minority (anomaly) class using WeightedRandomSampler
+    train_graph_labels = torch.cat([s[2] for s in train_samples])
+    n_anomaly = (train_graph_labels > 0).sum().item()
+    n_normal = (train_graph_labels == 0).sum().item()
+    # Weight inversely proportional to class frequency
+    weight_per_sample = torch.where(
+        train_graph_labels > 0,
+        torch.tensor(1.0 / max(n_anomaly, 1)),
+        torch.tensor(1.0 / max(n_normal, 1)),
+    )
+    sampler = torch.utils.data.WeightedRandomSampler(
+        weights=weight_per_sample,
+        num_samples=len(train_samples),
+        replacement=True,
+    )
+    logger.info(f"Oversampling: {n_anomaly} anomaly / {n_normal} normal samples")
+
     train_loader = DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True,
+        train_dataset, batch_size=args.batch_size, sampler=sampler,
         collate_fn=collate_gnn_batch, num_workers=0,
     )
     val_loader = DataLoader(

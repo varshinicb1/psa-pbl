@@ -377,10 +377,16 @@ class RGATv2(nn.Module):
         # --- Node-level supervision (if available) ---
         node_loss = torch.tensor(0.0, device=x.device)
         if node_labels is not None:
-            # Focal loss for class imbalance
+            # Weighted focal loss for class imbalance
+            # pos_weight > 1 gives higher weight to anomaly (minority) class
+            pw = self.config.pos_weight
             bce = F.binary_cross_entropy(node_scores, node_labels.float(), reduction="none")
+            # Apply class weighting: anomaly errors weighted by pos_weight
+            weights = torch.where(node_labels == 1, pw, 1.0)
+            weighted_bce = bce * weights
+            # Focal modulation
             pt = torch.where(node_labels == 1, node_scores, 1 - node_scores)
-            focal = (1 - pt) ** self.config.focal_gamma * bce
+            focal = (1 - pt) ** self.config.focal_gamma * weighted_bce
             node_loss = focal.mean()
             loss = loss + node_loss
 
