@@ -417,6 +417,8 @@ def generate_training_loss_curves() -> None:
             event_files = list(runs_dir.glob("events.out.tfevents.*"))
             if not event_files:
                 raise FileNotFoundError("No event files")
+            # Pick the largest/most recent file (prefer full training run over smoke test)
+            event_files.sort(key=lambda p: p.stat().st_size, reverse=True)
             event_file = str(event_files[0])
             ea = EventAccumulator(event_file)
             ea.Reload()

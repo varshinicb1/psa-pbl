@@ -1,0 +1,2 @@
+samples=12000
+anomaly_labels=960
