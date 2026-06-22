@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-06-22T22:08:29.412938</dc:date>
+    <dc:date>2026-06-23T00:30:03.993758</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -40,7 +40,7 @@ Q 14.105 44.9015 14.105 50.4455
 L 14.105 83.7095 
 Q 14.105 89.2535 19.685 89.2535 
 z
-" clip-path="url(#pa87afbbf9c)" style="fill: #1e293b; stroke: #334155; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#pc1940a7e8c)" style="fill: #1e293b; stroke: #334155; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
     <path d="M 19.685 189.0455 
@@ -53,7 +53,7 @@ Q 14.105 133.6055 14.105 139.1495
 L 14.105 183.5015 
 Q 14.105 189.0455 19.685 189.0455 
 z
-" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #059669; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#pc1940a7e8c)" style="fill: #ffffff; stroke: #059669; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
     <path d="M 19.685 505.0535 
@@ -66,7 +66,7 @@ Q 14.105 327.6455 14.105 333.1895
 L 14.105 499.5095 
 Q 14.105 505.0535 19.685 505.0535 
 z
-" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #1a56db; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#pc1940a7e8c)" style="fill: #ffffff; stroke: #1a56db; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
     <path d="M 287.525 189.0455 
@@ -79,7 +79,7 @@ Q 281.945 133.6055 281.945 139.1495
 L 281.945 183.5015 
 Q 281.945 189.0455 287.525 189.0455 
 z
-" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #7c3aed; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#pc1940a7e8c)" style="fill: #ffffff; stroke: #7c3aed; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
     <path d="M 287.525 505.0535 
@@ -92,7 +92,7 @@ Q 281.945 327.6455 281.945 333.1895
 L 281.945 499.5095 
 Q 281.945 505.0535 287.525 505.0535 
 z
-" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #7c3aed; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#pc1940a7e8c)" style="fill: #ffffff; stroke: #7c3aed; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_7">
     <path d="M 555.365 349.8215 
@@ -105,7 +105,7 @@ Q 549.785 100.3415 549.785 105.8855
 L 549.785 344.2775 
 Q 549.785 349.8215 555.365 349.8215 
 z
-" clip-path="url(#pa87afbbf9c)" style="fill: #ffffff; stroke: #dc2626; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#pc1940a7e8c)" style="fill: #ffffff; stroke: #dc2626; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
     <text style="font-size: 9px; font-family: 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Computer Modern Typewriter', 'Andale Mono', 'Nimbus Mono L', 'Courier New', 'Courier', 'Fixed', 'Terminal', monospace; text-anchor: middle; fill: #ffffff" x="399.125" y="69.459687" transform="rotate(-0 399.125 69.459687)">StatusBar -- Grid: BESCOM Bangalore | Ticks: 1,247 | System: Online</text>
@@ -141,7 +141,7 @@ Q 588.845 366.4535 588.845 371.9975
 L 588.845 455.1575 
 Q 588.845 460.7015 594.425 460.7015 
 z
-" clip-path="url(#pa87afbbf9c)" style="fill: #f8fafc; stroke-dasharray: 3.7,1.6; stroke-dashoffset: 0; stroke: #94a3b8; stroke-linejoin: miter"/>
+" clip-path="url(#pc1940a7e8c)" style="fill: #f8fafc; stroke-dasharray: 3.7,1.6; stroke-dashoffset: 0; stroke: #94a3b8; stroke-linejoin: miter"/>
    </g>
    <g id="text_8">
     <text style="font-size: 7px; font-family: 'DejaVu Serif', 'Bitstream Vera Serif', 'Computer Modern Roman', 'New Century Schoolbook', 'Century Schoolbook L', 'Utopia', 'ITC Bookman', 'Bookman', 'Nimbus Roman No9 L', 'Times New Roman', 'Times', 'Palatino', 'Charter', serif; fill: #64748b" transform="translate(651.751953 411.540062)">NodeInspector</text>
@@ -212,7 +212,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pa87afbbf9c">
+  <clipPath id="pc1940a7e8c">
    <rect x="8.525" y="39.3575" width="781.2" height="443.52"/>
   </clipPath>
  </defs>

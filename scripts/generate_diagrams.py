@@ -277,6 +277,83 @@ def generate_compliance() -> None:
 
 
 # ---------------------------------------------------------------------------
+# 7. GNN ARCHITECTURE DIAGRAM
+# ---------------------------------------------------------------------------
+def generate_gnn_architecture() -> None:
+    """GNN model architecture: RGATv2 + FaultClassifier pipeline."""
+    import graphviz
+    dot = graphviz.Digraph(
+        name="gnn_architecture", format="svg", engine="dot",
+        graph_attr={"rankdir": "LR", "splines": "ortho", "fontname": "Times-Roman",
+                    "fontsize": "11", "dpi": "300", "bgcolor": "white", "pad": "0.5",
+                    "nodesep": "0.3", "ranksep": "0.4"},
+    )
+
+    # Input
+    dot.node("snapshot", "GridGraphSnapshot\n(N x 10 node feats)\n(E x 10 edge feats)",
+             shape="cylinder", style="filled", fillcolor="#dbeafe")
+
+    # GridBuilder
+    dot.node("builder", "GridBuilder\nFeature Extraction\n+ Normalization",
+             shape="box", style="filled", fillcolor="#e0e7ff")
+
+    # RGATv2 layers
+    with dot.subgraph(name="cluster_rgat") as s:
+        s.attr(label="RGATv2 Backbone", style="rounded,dashed",
+               color="#7c3aed", fontcolor="#7c3aed", fontsize="12", fontname="Times-Bold")
+        s.node("node_enc", "Node Encoder\nLinear + LayerNorm + ELU", shape="box", style="filled", fillcolor="#ede9fe")
+        s.node("edge_enc", "Edge Encoder\nLinear + LayerNorm + ELU", shape="box", style="filled", fillcolor="#ede9fe")
+        s.node("gat1", "GATv2Conv Block 1\n(h=4, residual, norm)", shape="box", style="filled", fillcolor="#ddd6fe")
+        s.node("gat2", "GATv2Conv Block 2\n(h=4, residual, norm)", shape="box", style="filled", fillcolor="#ddd6fe")
+        s.node("gat3", "GATv2Conv Block 3\n(h=4, residual, norm)", shape="box", style="filled", fillcolor="#ddd6fe")
+        s.edge("node_enc", "gat1"); s.edge("edge_enc", "gat1")
+        s.edge("gat1", "gat2"); s.edge("gat2", "gat3")
+
+    # Output heads
+    with dot.subgraph(name="cluster_heads") as s:
+        s.attr(label="Output Heads", style="rounded,dashed",
+               color="#059669", fontcolor="#059669", fontsize="12", fontname="Times-Bold")
+        s.node("node_head", "Node Score Head\nMLP -> sigmoid -> [N,1]", shape="box", style="filled", fillcolor="#d1fae5")
+        s.node("edge_head", "Edge Score Head\nMLP -> sigmoid -> [E,1]", shape="box", style="filled", fillcolor="#d1fae5")
+        s.node("pool", "Attention Pooling\nLearned node weighting", shape="box", style="filled", fillcolor="#d1fae5")
+
+    # FaultClassifier
+    with dot.subgraph(name="cluster_cls") as s:
+        s.attr(label="FaultClassifier", style="rounded,dashed",
+               color="#dc2626", fontcolor="#dc2626", fontsize="12", fontname="Times-Bold")
+        s.node("cls", "Fault Type\n6-class MLP\n+ Temp Scaling", shape="box", style="filled", fillcolor="#fce7f3")
+        s.node("iso", "Isolation Head\nPer-node attribution", shape="box", style="filled", fillcolor="#fce7f3")
+        s.node("sev", "Severity Head\nRegression [0,1]", shape="box", style="filled", fillcolor="#fce7f3")
+
+    # Physics loss
+    dot.node("physics", "Physics-Informed\nRegularisation\n(Voltage bounds,\n conservation,\n smoothness)",
+             shape="note", style="filled", fillcolor="#fef3c7")
+
+    # Edges
+    dot.edge("snapshot", "builder", label="to PyG Data")
+    dot.edge("builder", "node_enc", label="x [N,10]")
+    dot.edge("builder", "edge_enc", label="e [E,10]")
+    dot.edge("gat3", "node_head", label="h [N,128]")
+    dot.edge("gat3", "edge_head", label="e [E,128]")
+    dot.edge("gat3", "pool", label="h [N,128]")
+    dot.edge("pool", "cls", label="g [1,64]")
+    dot.edge("pool", "iso", label="h [N,64]")
+    dot.edge("pool", "sev", label="g [1,64]")
+    dot.edge("node_head", "physics", style="dashed", arrowhead="odiamond")
+    dot.edge("edge_head", "physics", style="dashed", arrowhead="odiamond")
+
+    # Output
+    dot.node("output", "FaultPrediction\n(FaultType, confidence,\n isolation_nodes,\n severity, explanation)",
+             shape="box3d", style="filled", fillcolor="#e0e7ff")
+    dot.edge("cls", "output")
+    dot.edge("iso", "output")
+    dot.edge("sev", "output")
+
+    dot.render(str(OUTPUT_DIR / "gnn_architecture"), cleanup=True)
+    log("gnn_architecture.svg")
+
+
+# ---------------------------------------------------------------------------
 # 6. TEST RESULTS
 # ---------------------------------------------------------------------------
 def generate_test_results() -> None:
@@ -327,8 +404,9 @@ def main() -> None:
         ("2/6  Pipeline / Data Flow Diagram", generate_pipeline),
         ("3/6  Dashboard Layout Diagram", generate_dashboard_layout),
         ("4/6  BESCOM Network Diagram", generate_bescom_network),
-        ("5/6  Compliance Audit Charts", generate_compliance),
-        ("6/6  Test Results Charts", generate_test_results),
+        ("5/7  GNN Architecture Diagram", generate_gnn_architecture),
+        ("6/7  Compliance Audit Charts", generate_compliance),
+        ("7/7  Test Results Charts", generate_test_results),
     ], 1):
         print(f"\n[{step}] {name}")
         try:
