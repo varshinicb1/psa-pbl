@@ -93,7 +93,7 @@ class TestEnsembleDetector:
         assert result.explanation is not None or result.prediction["type"] != "NoAnomaly"
 
     def test_stats(self):
-        detector = EnsembleDetector()
+        detector = EnsembleDetector(use_gnn=False)
         stats = detector.get_stats()
         assert stats["total_predictions"] >= 0
         assert len(stats["detectors"]) == 4

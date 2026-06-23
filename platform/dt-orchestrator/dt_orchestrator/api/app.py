@@ -86,7 +86,7 @@ app = FastAPI(
     title="Metro Grid Digital Twin - Autonomous Operations Platform",
     description="Production-grade digital twin for metropolitan power grid operations. "
     "Real-time simulation, ML-based anomaly detection, SCADA integration.",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
 )
 
@@ -106,7 +106,7 @@ async def health():
         uptime = time.time() - app_state._metrics["start_time"]
         return {
             "status": "healthy",
-            "version": "2.0.0",
+            "version": "2.1.0",
             "uptime_seconds": uptime,
             "running": app_state.running,
             "grid_type": app_state.grid_type,

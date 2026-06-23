@@ -34,12 +34,21 @@ from dt_ml.gnn.fault_types import FaultClassifier, FaultType, FaultPrediction, c
 
 logger = logging.getLogger(__name__)
 
-# Default checkpoint paths (relative to project root)
-DEFAULT_CHECKPOINT_DIR = Path(__file__).resolve().parents[2] / "checkpoints"
-CHECKPOINT_NAMES = {
-    14: "gridsentinel_ieee14.pt",
-    118: "gridsentinel_ieee118.pt",
-}
+# Default checkpoint paths
+# Priority: checkpoints_v5 (best F1=0.151) > checkpoints_v4 > checkpoints_v3 > project_root/checkpoints
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_CHECKPOINT_CANDIDATES = [
+    _REPO_ROOT / "checkpoints_v5" / "gridsentinel_ieee14_full.pt",
+    _REPO_ROOT / "checkpoints_v4" / "gridsentinel_ieee14_full.pt",
+    _REPO_ROOT / "checkpoints_v3" / "gridsentinel_ieee14_full.pt",
+    _REPO_ROOT / "checkpoints" / "gridsentinel_ieee14_full.pt",
+    _REPO_ROOT / "checkpoints" / "gridsentinel_ieee14.pt",
+]
+DEFAULT_CHECKPOINT_PATH: Optional[Path] = None
+for _cp in _CHECKPOINT_CANDIDATES:
+    if _cp.exists():
+        DEFAULT_CHECKPOINT_PATH = _cp
+        break
 
 
 def _detect_grid_size(snapshot: GridGraphSnapshot) -> int:
@@ -101,9 +110,10 @@ class GNNDetector:
         self._total_predictions = 0
         self._anomaly_predictions = 0
 
-        # Try loading checkpoint
-        if checkpoint_path is not None:
-            self._load_checkpoint(checkpoint_path)
+        # Try loading checkpoint (auto-detect best available)
+        load_path = checkpoint_path or DEFAULT_CHECKPOINT_PATH
+        if load_path is not None:
+            self._load_checkpoint(load_path)
         else:
             logger.info("GNNDetector initialized with random weights (untrained)")
 

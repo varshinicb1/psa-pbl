@@ -13,7 +13,10 @@ from pydantic import ValidationError
 # Setup paths for imports
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "platform" / "dt-orchestrator"))
-sys.path.insert(0, str(PROJECT_ROOT / "platform" / "dt-contracts"))
+sys.path.insert(0, str(PROJECT_ROOT / "platform" / "dt-contracts" / "python" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT / "platform" / "dt-ml"))
+sys.path.insert(0, str(PROJECT_ROOT / "platform" / "dt-sim-pandapower"))
+sys.path.insert(0, str(PROJECT_ROOT / "platform"))
 
 
 @pytest.fixture
@@ -151,7 +154,7 @@ def mock_ws_message() -> Dict[str, Any]:
 def api_client():
     """Fixture for FastAPI test client."""
     from fastapi.testclient import TestClient
-    from dt_orchestrator.api.server import app
+    from dt_orchestrator.api.app import app
 
     return TestClient(app)
 

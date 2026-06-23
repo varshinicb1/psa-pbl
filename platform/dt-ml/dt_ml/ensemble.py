@@ -93,10 +93,17 @@ class LSTMPredictor:
 class EnsembleDetector(TwinModel):
     """
     Ensemble detector combining physics rules, statistical methods,
-    and ML-based anomaly detection for production grid monitoring.
+    and ML-based anomaly detection (including RGATv2 GNN) for production grid monitoring.
+
+    Detectors:
+        1. Physics Rules — hard voltage/loading bounds
+        2. Statistical Z-Score — moving window deviation
+        3. Rate-of-Change — step change detection
+        4. LSTM Predictor — sequence trend analysis
+        5. RGATv2 GNN — graph attention for node-level anomaly localization
     """
 
-    def __init__(self):
+    def __init__(self, use_gnn: bool = True):
         super().__init__()
         self.zscore = MovingZScore(window=30, threshold=3.0)
         self.roc = RateOfChangeDetector(threshold=0.05)
@@ -104,7 +111,27 @@ class EnsembleDetector(TwinModel):
         self._feature_store: Dict[str, deque] = {}
         self._anomaly_count = 0
         self._total_predictions = 0
-        logger.info("EnsembleDetector initialized with all detectors")
+        self._gnn_predictions = 0
+        self._gnn_anomalies = 0
+
+        # RGATv2 GNN detector (loads best available checkpoint)
+        self.gnn = None
+        if use_gnn:
+            try:
+                from dt_ml.gnn.detector import GNNDetector
+                self.gnn = GNNDetector()
+                if self.gnn._checkpoint_loaded:
+                    logger.info(f"GNN detector loaded (checkpoint: {self.gnn._checkpoint_loaded})")
+                else:
+                    logger.info("GNN detector initialized (random weights — train for production use)")
+            except Exception as exc:
+                logger.warning(f"GNN detector init failed: {exc}")
+                self.gnn = None
+
+        detector_list = ["zscore", "rate_of_change", "lstm_surrogate", "physics_bounds"]
+        if self.gnn is not None:
+            detector_list.append("rgatv2_gnn")
+        logger.info(f"EnsembleDetector initialized with {len(detector_list)} detectors: {', '.join(detector_list)}")
 
     def predict(self, snapshot: GridGraphSnapshot) -> TwinModelOutput:
         self._total_predictions += 1
@@ -157,6 +184,23 @@ class EnsembleDetector(TwinModel):
                     anomalies.append((eid, "Overload", l_f, f"Loading={l_f:.1f}%"))
                     scores.append((l_f / 100.0, eid))
 
+        # --- RGATv2 GNN Inference ---
+        gnn_result = None
+        if self.gnn is not None:
+            try:
+                gnn_result = self.gnn.predict(snapshot)
+                self._gnn_predictions += 1
+                if gnn_result["type"] == "GNNDetection":
+                    self._gnn_anomalies += 1
+                    # Add GNN-detected nodes to classical anomalies
+                    for nid, score in gnn_result["node_scores"].items():
+                        if score > 0.3:
+                            anomalies.append((nid, "GNNFault", score, f"GNN score={score:.3f}"))
+                            scores.append((float(score), nid))
+            except Exception as exc:
+                logger.warning(f"GNN inference failed: {exc}")
+
+        # --- Build output ---
         if not anomalies:
             return TwinModelOutput(
                 prediction={
@@ -176,6 +220,7 @@ class EnsembleDetector(TwinModel):
             EntityScore(id=nid, score=float(s * 100)) for s, nid in top_scores
         ]
 
+        ensemble_size = 4 + (1 if self.gnn is not None else 0)
         explanation = ExplanationPacket(
             schema_version=SCHEMA_VERSION,
             t=snapshot.t,
@@ -184,10 +229,11 @@ class EnsembleDetector(TwinModel):
                 "type": "MLEnsembleAnomaly",
                 "anomaly_count": len(anomalies),
                 "anomaly_types": anomaly_types,
+                "gnn_detected": gnn_result is not None and gnn_result["type"] == "GNNDetection",
             },
             uncertainty={
                 "mode": "medium",
-                "ensemble_size": 3,
+                "ensemble_size": ensemble_size,
                 "detectors_triggered": len(set(a[0] for a in anomalies)),
             },
             physics_residuals={"anomalies": anomalies},
@@ -209,12 +255,16 @@ class EnsembleDetector(TwinModel):
                 "count": len(anomalies),
                 "details": anomalies[:5],
                 "features": all_features,
+                "gnn_result": gnn_result,
             },
             explanation=explanation,
         )
 
     def get_stats(self) -> Dict[str, Any]:
-        return {
+        detectors = ["zscore", "rate_of_change", "lstm_surrogate", "physics_bounds"]
+        if self.gnn is not None:
+            detectors.append("rgatv2_gnn")
+        stats = {
             "total_predictions": self._total_predictions,
             "anomalies_detected": self._anomaly_count,
             "anomaly_rate": (
@@ -222,5 +272,12 @@ class EnsembleDetector(TwinModel):
                 if self._total_predictions > 0
                 else 0.0
             ),
-            "detectors": ["zscore", "rate_of_change", "lstm_surrogate", "physics_bounds"],
+            "detectors": detectors,
         }
+        if self.gnn is not None:
+            stats["gnn"] = {
+                "total_predictions": self._gnn_predictions,
+                "anomalies_detected": self._gnn_anomalies,
+                "checkpoint_loaded": self.gnn._checkpoint_loaded,
+            }
+        return stats
