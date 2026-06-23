@@ -110,6 +110,14 @@ class SyntheticGridGenerator:
                 self.runner.net.load.q_mvar.tolist(),
             )
 
+        # Cache baseline bus voltages (needed for perturbation-based labeling)
+        self._base_vm: Optional[List[float]] = None
+        try:
+            if self.runner.net.res_bus is not None and len(self.runner.net.res_bus) > 0:
+                self._base_vm = self.runner.net.res_bus.vm_pu.tolist()
+        except Exception:
+            pass
+
         # Fault type distribution for labeling
         self.fault_types = [FaultType.NORMAL, FaultType.SINGLE_LINE_TO_GROUND,
                            FaultType.LINE_TO_LINE_TO_GROUND, FaultType.THREE_PHASE]
@@ -174,28 +182,23 @@ class SyntheticGridGenerator:
             # Build PyG Data
             data = self.grid_builder.build(snap2)
 
-            # Create labels
+            # Create labels: flag nodes where voltage deviates significantly
+            # from the scenario mean (captures the perturbation footprint)
+            node_labels = torch.zeros(len(snap2.nodes), dtype=torch.long)
             if has_anomaly:
-                # Node labels: 1 for affected bus, 0 for others
-                node_labels = torch.zeros(len(snap2.nodes), dtype=torch.long)
-                for i, node in enumerate(snap2.nodes):
-                    # Check if this bus has voltage out of bounds
-                    vm = node.dynamic.get("vm_pu", 1.0)
-                    try:
-                        vm_f = float(vm)
-                        if vm_f < self.voltage_lower or vm_f > self.voltage_upper:
-                            node_labels[i] = 1
-                    except (ValueError, TypeError):
-                        pass
+                vms_list = [float(n.dynamic.get("vm_pu", 1.0)) for n in snap2.nodes]
+                vms = torch.tensor(vms_list)
+                vm_mean = vms.mean()
+                vm_std = vms.std().clamp(min=1e-6)
+                z_scores = (vms - vm_mean).abs() / vm_std
+                # Label nodes with voltage more than 1.8 std from mean
+                node_labels = (z_scores > 1.8).long()
 
-                # If powerflow didn't produce bounds violations, simulate artificially
                 if node_labels.sum() == 0:
                     node_labels[affected_bus_idx] = 1
 
-                # Graph label: fault type index
                 graph_label = torch.tensor([fault_type.value], dtype=torch.long)
             else:
-                node_labels = torch.zeros(len(snap2.nodes), dtype=torch.long)
                 graph_label = torch.tensor([FaultType.NORMAL.value], dtype=torch.long)
 
             yield data, node_labels, graph_label
@@ -228,7 +231,7 @@ class SyntheticGridGenerator:
             if has_anomaly and i == affected_bus_idx:
                 # Heavy perturbation on the affected bus
                 phase = math.sin(2 * math.pi * tick / 20)
-                anomaly_scale = 1.0 + severity * 0.15 * phase
+                anomaly_scale = 1.0 + severity * 0.25 * phase  # ±25% instead of ±15%
                 scale *= anomaly_scale
 
             self.runner.net.load.at[i, "p_mw"] = max(0, base_p[i] * scale)
@@ -315,10 +318,11 @@ def compute_metrics(
     node_labels: torch.Tensor,
     graph_logits: torch.Tensor,
     graph_labels: torch.Tensor,
+    threshold: float = 0.5,
 ) -> Dict[str, float]:
     """Compute training metrics: accuracy, precision, recall, F1."""
-    # Node-level metrics
-    node_pred_binary = (node_preds > 0.5).long()
+    # Node-level metrics with given threshold
+    node_pred_binary = (node_preds > threshold).long()
     node_correct = (node_pred_binary == node_labels).float().mean().item()
 
     # Anomaly detection accuracy (graph-level)
@@ -341,6 +345,53 @@ def compute_metrics(
         "recall": recall,
         "f1": f1,
     }
+
+
+def find_optimal_threshold(
+    all_scores: torch.Tensor,
+    all_labels: torch.Tensor,
+    num_thresholds: int = 50,
+) -> Tuple[float, Dict[str, float]]:
+    """
+    Search for the decision threshold that maximizes F1 on validation data.
+
+    Args:
+        all_scores: Flattened node anomaly scores [N_total]
+        all_labels: Flattened node labels [N_total]
+        num_thresholds: Number of candidate thresholds to evaluate
+
+    Returns:
+        (best_threshold, best_metrics)
+    """
+    min_t, max_t = 0.05, 0.95
+    best_f1 = -1.0
+    best_th = 0.5
+    best_metrics = {}
+
+    for th in torch.linspace(min_t, max_t, num_thresholds):
+        preds = (all_scores > th).long()
+        tp = ((preds == 1) & (all_labels == 1)).float().sum().item()
+        fp = ((preds == 1) & (all_labels == 0)).float().sum().item()
+        fn = ((preds == 0) & (all_labels == 1)).float().sum().item()
+        tn = ((preds == 0) & (all_labels == 0)).float().sum().item()
+
+        prec = tp / (tp + fp + 1e-10)
+        rec = tp / (tp + fn + 1e-10)
+        f1 = 2 * prec * rec / (prec + rec + 1e-10)
+        acc = (tp + tn) / (tp + tn + fp + fn + 1e-10)
+
+        if f1 > best_f1:
+            best_f1 = f1
+            best_th = th.item()
+            best_metrics = {
+                "threshold": best_th,
+                "precision": prec,
+                "recall": rec,
+                "f1": f1,
+                "accuracy": acc,
+            }
+
+    return best_th, best_metrics
 
 
 # ---------------------------------------------------------------------------
@@ -431,6 +482,17 @@ def train(args: argparse.Namespace) -> None:
     # -----------------------------------------------------------------------
     # Model initialization
     # -----------------------------------------------------------------------
+    # Strategy: NO sampler (model sees real 95:5 distribution)
+    # Use moderate pos_weight to emphasize anomalies without distorting distribution
+    effective_pos_weight = max(1.0, args.pos_weight)
+    logger.info(
+        f"Sampler={'OFF' if not args.use_sampler else 'ON'} | "
+        f"pos_weight={effective_pos_weight:.2f} | "
+        f"label_smoothing={args.label_smoothing:.2f} | "
+        f"margin_weight={args.margin_weight:.3f} | "
+        f"contrastive_weight={args.contrastive_weight:.3f}"
+    )
+
     config = RGATv2Config(
         node_feat_dim=10,
         edge_feat_dim=10,
@@ -441,7 +503,10 @@ def train(args: argparse.Namespace) -> None:
         dropout=args.dropout,
         phys_loss_weight=args.phys_loss_weight,
         focal_gamma=args.focal_gamma,
-        pos_weight=max(1.0, (1.0 - pos_ratio) / (pos_ratio + 1e-8)),
+        pos_weight=effective_pos_weight,
+        label_smoothing=args.label_smoothing,
+        margin_weight=args.margin_weight,
+        contrastive_weight=args.contrastive_weight,
     )
 
     if args.resume:
@@ -480,6 +545,7 @@ def train(args: argparse.Namespace) -> None:
     # Training loop
     # -----------------------------------------------------------------------
     best_val_loss = float("inf")
+    best_val_quality = float("-inf")
     start_time = time.time()
     global_step = 0
 
@@ -491,23 +557,29 @@ def train(args: argparse.Namespace) -> None:
     train_graph_labels = torch.cat([s[2] for s in train_samples])
     n_anomaly = (train_graph_labels > 0).sum().item()
     n_normal = (train_graph_labels == 0).sum().item()
-    # Weight inversely proportional to class frequency
-    weight_per_sample = torch.where(
-        train_graph_labels > 0,
-        torch.tensor(1.0 / max(n_anomaly, 1)),
-        torch.tensor(1.0 / max(n_normal, 1)),
-    )
-    sampler = torch.utils.data.WeightedRandomSampler(
-        weights=weight_per_sample,
-        num_samples=len(train_samples),
-        replacement=True,
-    )
-    logger.info(f"Oversampling: {n_anomaly} anomaly / {n_normal} normal samples")
-
-    train_loader = DataLoader(
-        train_dataset, batch_size=args.batch_size, sampler=sampler,
-        collate_fn=collate_gnn_batch, num_workers=0,
-    )
+    if args.use_sampler:
+        # Weight inversely proportional to class frequency
+        weight_per_sample = torch.where(
+            train_graph_labels > 0,
+            torch.tensor(1.0 / max(n_anomaly, 1)),
+            torch.tensor(1.0 / max(n_normal, 1)),
+        )
+        sampler = torch.utils.data.WeightedRandomSampler(
+            weights=weight_per_sample,
+            num_samples=len(train_samples),
+            replacement=True,
+        )
+        logger.info(f"Oversampling ENABLED: {n_anomaly} anomaly / {n_normal} normal samples")
+        train_loader = DataLoader(
+            train_dataset, batch_size=args.batch_size, sampler=sampler,
+            collate_fn=collate_gnn_batch, num_workers=0,
+        )
+    else:
+        logger.info(f"No oversampling: {n_anomaly} anomaly / {n_normal} normal samples")
+        train_loader = DataLoader(
+            train_dataset, batch_size=args.batch_size, shuffle=True,
+            collate_fn=collate_gnn_batch, num_workers=0,
+        )
     val_loader = DataLoader(
         val_dataset, batch_size=args.batch_size, shuffle=False,
         collate_fn=collate_gnn_batch, num_workers=0,
@@ -580,7 +652,7 @@ def train(args: argparse.Namespace) -> None:
 
         avg_train_loss = train_loss / max(num_train_batches, 1)
 
-        # ---- Validation ----
+        # ---- Validation (with optional threshold tuning) ----
         model.eval()
         classifier.eval()
         val_loss = 0.0
@@ -589,6 +661,8 @@ def train(args: argparse.Namespace) -> None:
             "precision": [], "recall": [], "f1": [],
         }
         num_val_batches = 0
+        all_val_scores: List[torch.Tensor] = []
+        all_val_labels: List[torch.Tensor] = []
 
         with torch.no_grad():
             for batch_data, node_labels, graph_labels in val_loader:
@@ -616,17 +690,32 @@ def train(args: argparse.Namespace) -> None:
                 val_loss += total_val_loss.item()
                 num_val_batches += 1
 
-                # Metrics
                 node_scores = out["node_scores"].squeeze(-1)
                 graph_logits = cls_out["fault_logits"]
+
+                # Collect for threshold tuning
+                all_val_scores.append(node_scores.cpu())
+                all_val_labels.append(node_labels.cpu())
+
+                # Default threshold (0.5) metrics
                 metrics = compute_metrics(node_scores, node_labels, graph_logits, graph_labels)
                 for k, v in metrics.items():
                     val_metrics[k].append(v)
 
         avg_val_loss = val_loss / max(num_val_batches, 1)
 
-        # Average validation metrics
+        # Average validation metrics (using default 0.5 threshold)
         avg_val_metrics = {k: float(np.mean(v)) for k, v in val_metrics.items()}
+
+        # --- Threshold tuning on validation set ---
+        optimal_threshold = 0.5
+        tuned_val_metrics = dict(avg_val_metrics)
+        if args.threshold_tuning and len(all_val_scores) > 0:
+            cat_scores = torch.cat(all_val_scores)
+            cat_labels = torch.cat(all_val_labels)
+            optimal_threshold, tuned_val_metrics = find_optimal_threshold(
+                cat_scores, cat_labels, num_thresholds=50,
+            )
 
         # Log epoch
         writer.add_scalar("epoch/train_loss", avg_train_loss, epoch)
@@ -637,22 +726,26 @@ def train(args: argparse.Namespace) -> None:
         # Scheduler step
         scheduler.step()
 
-        # Print progress
+        # Print progress (with tuned threshold metrics if available)
         if epoch % args.print_interval == 0 or epoch == 1:
             elapsed = time.time() - start_time
             logger.info(
                 f"Epoch {epoch:3d}/{args.epochs} | "
                 f"Train: {avg_train_loss:.4f} | "
                 f"Val: {avg_val_loss:.4f} | "
-                f"Acc: {avg_val_metrics['node_accuracy']:.3f} | "
-                f"F1: {avg_val_metrics['f1']:.3f} | "
-                f"Prec: {avg_val_metrics['precision']:.3f} | "
-                f"Rec: {avg_val_metrics['recall']:.3f} | "
+                f"Acc: {tuned_val_metrics['accuracy']:.3f} | "
+                f"F1: {tuned_val_metrics['f1']:.3f} | "
+                f"Prec: {tuned_val_metrics['precision']:.3f} | "
+                f"Rec: {tuned_val_metrics['recall']:.3f} | "
+                f"Thresh={optimal_threshold:.2f} | "
                 f"{elapsed:.0f}s"
             )
 
-        # Checkpoint
-        if avg_val_loss < best_val_loss:
+        # Checkpoint (based on tunable-F1, not just loss)
+        val_quality = tuned_val_metrics['f1'] - avg_val_loss * 0.01  # F1 - small loss penalty
+
+        if val_quality > best_val_quality:
+            best_val_quality = val_quality
             best_val_loss = avg_val_loss
             checkpoint_path = checkpoint_dir / "gridsentinel_ieee14.pt"
             save_rgatv2(
@@ -662,7 +755,8 @@ def train(args: argparse.Namespace) -> None:
                     "train_samples": len(train_dataset),
                     "val_samples": len(val_dataset),
                     "args": vars(args),
-                    "val_metrics": avg_val_metrics,
+                    "val_metrics": tuned_val_metrics,
+                    "optimal_threshold": optimal_threshold,
                 },
             )
             # Also save FaultClassifier weights combined
@@ -677,12 +771,18 @@ def train(args: argparse.Namespace) -> None:
                 "metadata": {
                     "train_samples": len(train_dataset),
                     "val_samples": len(val_dataset),
-                    "val_metrics": avg_val_metrics,
+                    "val_metrics": tuned_val_metrics,
+                    "optimal_threshold": optimal_threshold,
                 },
             }
             combined_path = checkpoint_dir / "gridsentinel_ieee14_full.pt"
             torch.save(combined_state, str(combined_path))
-            logger.info(f"Checkpoint saved (val_loss={avg_val_loss:.4f})")
+            logger.info(
+                f"Checkpoint saved (F1={tuned_val_metrics['f1']:.4f}, "
+                f"P={tuned_val_metrics['precision']:.3f}, "
+                f"R={tuned_val_metrics['recall']:.3f}, "
+                f"th={optimal_threshold:.2f})"
+            )
 
         # Early stopping
         if early_stopping.step(avg_val_loss):
@@ -692,7 +792,11 @@ def train(args: argparse.Namespace) -> None:
     # ---- Final save ----
     final_path = checkpoint_dir / "gridsentinel_ieee14_final.pt"
     save_rgatv2(model, str(final_path), epoch=args.epochs, val_loss=best_val_loss)
-    logger.info(f"Training complete. Best val_loss: {best_val_loss:.4f}")
+    logger.info(f"Training complete.")
+    logger.info(f"Best val F1 (tuned): {tuned_val_metrics['f1']:.4f}")
+    logger.info(f"Best val Precision: {tuned_val_metrics['precision']:.3f}")
+    logger.info(f"Best val Recall: {tuned_val_metrics['recall']:.3f}")
+    logger.info(f"Optimal threshold: {optimal_threshold:.2f}")
     logger.info(f"Final model: {final_path}")
 
     writer.close()
@@ -872,29 +976,43 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--weight-decay", type=float, default=1e-5,
                    help="AdamW weight decay")
     p.add_argument("--grad-clip", type=float, default=1.0,
-                   help="Gradient clipping norm (0 to disable)")
+                    help="Gradient clipping norm (0 to disable)")
     p.add_argument("--patience", type=int, default=15,
-                   help="Early stopping patience")
+                    help="Early stopping patience")
     p.add_argument("--seed", type=int, default=42,
-                   help="Random seed")
+                    help="Random seed")
+
+    # Class imbalance
+    p.add_argument("--pos-weight", type=float, default=5.0,
+                    help="Positive class weight (>1 emphasizes anomalies)")
+    p.add_argument("--use-sampler", action=argparse.BooleanOptionalAction, default=False,
+                    help="Use WeightedRandomSampler for balanced batches")
+    p.add_argument("--label-smoothing", type=float, default=0.1,
+                    help="Label smoothing epsilon (0 = disabled)")
+    p.add_argument("--threshold-tuning", action=argparse.BooleanOptionalAction, default=True,
+                    help="Search optimal inference threshold on val set")
+    p.add_argument("--margin-weight", type=float, default=0.0,
+                    help="Weight for margin-based separation loss (0 = disabled)")
+    p.add_argument("--contrastive-weight", type=float, default=0.1,
+                    help="Weight for supervised contrastive loss (0 = disabled)")
 
     # Logging / checkpoints
     p.add_argument("--checkpoint-dir", type=str, default="checkpoints",
-                   help="Checkpoint output directory")
+                    help="Checkpoint output directory")
     p.add_argument("--log-dir", type=str, default="runs/gnn",
-                   help="TensorBoard log directory")
+                    help="TensorBoard log directory")
     p.add_argument("--log-interval", type=int, default=10,
-                   help="Steps between logging")
+                    help="Steps between logging")
     p.add_argument("--print-interval", type=int, default=5,
-                   help="Epochs between printing")
+                    help="Epochs between printing")
 
     # Misc
     p.add_argument("--resume", type=str, default=None,
-                   help="Resume from checkpoint path")
+                    help="Resume from checkpoint path")
     p.add_argument("--cpu", action="store_true",
-                   help="Force CPU even if CUDA available")
+                    help="Force CPU even if CUDA available")
     p.add_argument("--quick", action="store_true",
-                   help="Quick smoke test (reduced data)")
+                    help="Quick smoke test (reduced data)")
 
     args = p.parse_args(argv)
     return args

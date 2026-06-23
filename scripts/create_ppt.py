@@ -117,7 +117,7 @@ def add_header_bar(slide):
     add_shape(slide, Inches(0), Inches(0.9), SLIDE_WIDTH, Inches(0.05), RVCE_GOLD)
     # Title text in header
     add_text_box(slide, Inches(0.3), Inches(0.08), Inches(10), Inches(0.7),
-                 "RV College of Engineering® — BMS Institute of Technology",
+                 "RV College of Engineering® — Bengaluru",
                  font_size=11, bold=True, color=WHITE, font_name="Calibri")
     add_text_box(slide, Inches(0.3), Inches(0.45), Inches(10), Inches(0.4),
                  "Department of Electrical Engineering | Power System Analysis | PBL 2026",
@@ -164,38 +164,95 @@ def add_section_number(slide, number, text):
 
 
 def add_image(slide, image_path, left, top, width, height=None):
-    """Add an image to the slide (supports PNG and converts SVG via cairosvg)."""
-    if height is None:
-        height = width * 0.75
+    """Add an image to the slide preserving aspect ratio.
+
+    Uses `width` as the primary dimension; if `height` is given, scales the
+    image to fit within (width, height) while maintaining the native aspect
+    ratio (like ``object-fit: contain``).
+    """
+    from PIL import Image
     from io import BytesIO
+    import subprocess, tempfile, os
+
     png_path = image_path
     svg_path = image_path.with_suffix('.svg')
+
+    def _get_native_size(path):
+        with Image.open(str(path)) as im:
+            return im.size  # (w, h) in pixels
+
+    def _apply(w, h, native_w, native_h):
+        ratio = native_w / native_h
+        # Scale down to fit within (w, h) preserving ratio
+        if w / h > ratio:
+            w_fit = int(h * ratio)
+            h_fit = int(h)
+        else:
+            w_fit = int(w)
+            h_fit = int(w / ratio)
+        return w_fit, h_fit
+
     if png_path.exists():
-        slide.shapes.add_picture(str(png_path), left, top, width, height)
+        nw, nh = _get_native_size(png_path)
+        if height is not None:
+            w, height = _apply(width, height, nw, nh)
+        else:
+            w, height = int(width), int(width * nh / nw)
+        slide.shapes.add_picture(str(png_path), left, top, w, height)
         return True
+
     elif svg_path.exists():
+        # Determine target size preserving ratio
+        if height is not None:
+            # Use width/height as bounding box
+            tw, th = int(width), int(height)
+        else:
+            # Default 4:3 box if no height given
+            tw, th = int(width), int(int(width) * 0.75)
+
+        # Try cairosvg first
         try:
             import cairosvg
             svg_data = svg_path.read_bytes()
-            png_data = cairosvg.svg2png(bytestring=svg_data, output_width=int(width), output_height=int(height))
+            png_data = cairosvg.svg2png(bytestring=svg_data)
             buf = BytesIO(png_data)
-            slide.shapes.add_picture(buf, left, top, width, height)
+            nw, nh = _get_native_size(buf)
+            w, h = _apply(tw, th, nw, nh)
+            # Re-render at target size for crispness
+            png_data = cairosvg.svg2png(bytestring=svg_data, output_width=w, output_height=h)
+            buf = BytesIO(png_data)
+            slide.shapes.add_picture(buf, left, top, w, h)
+            return True
+        except Exception:
+            pass
+        # Fallback to ImageMagick
+        try:
+            fd, tmp = tempfile.mkstemp(suffix='.png')
+            os.close(fd)
+            subprocess.run(
+                ['magick', str(svg_path), '-resize', f'{tw}x{th}', tmp],
+                check=True, capture_output=True, timeout=30
+            )
+            nw, nh = _get_native_size(tmp)
+            w, h = _apply(tw, th, nw, nh)
+            slide.shapes.add_picture(tmp, left, top, w, h)
+            os.unlink(tmp)
             return True
         except Exception as e:
             print(f"  [WARN] Could not convert {svg_path.name}: {e}")
-            # Add placeholder rectangle
-            shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
-            shape.fill.solid()
-            shape.fill.fore_color.rgb = LIGHT_BG
-            shape.line.color.rgb = RVCE_BLUE
-            shape.line.width = Pt(0.5)
-            tf = shape.text_frame
-            tf.paragraphs[0].text = svg_path.stem.replace("_", " ").title()
-            tf.paragraphs[0].font.size = Pt(11)
-            tf.paragraphs[0].font.color.rgb = GREY
-            tf.paragraphs[0].alignment = PP_ALIGN.CENTER
-            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-            return False
+        # Placeholder fallback
+        shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = LIGHT_BG
+        shape.line.color.rgb = RVCE_BLUE
+        shape.line.width = Pt(0.5)
+        tf = shape.text_frame
+        tf.paragraphs[0].text = svg_path.stem.replace("_", " ").title()
+        tf.paragraphs[0].font.size = Pt(11)
+        tf.paragraphs[0].font.color.rgb = GREY
+        tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        return False
     return False
 
 
@@ -540,18 +597,18 @@ add_section_number(slide, "07", "Results — GNN Training")
 add_image(slide, IMAGES_DIR / "training_loss.png", Inches(0.3), Inches(1.8), Inches(7.0), Inches(5.0))
 # Metrics
 add_text_box(slide, Inches(7.5), Inches(1.8), Inches(5.5), Inches(0.4),
-             "RGATv2 Training (28 epochs)", font_size=14, bold=True, color=RVCE_BLUE)
+             "RGATv2 Training (50 epochs)", font_size=14, bold=True, color=RVCE_BLUE)
 metrics_data = [
-    ("Best Val Loss", "1.465"),
-    ("Val Accuracy", "40.3%"),
-    ("F1 Score", "0.127"),
-    ("Recall (Anomalies)", "72.6%"),
-    ("Precision", "7.1%"),
-    ("Total Parameters", "217,475"),
-    ("Train Samples", "10,200"),
-    ("Val Samples", "1,800"),
-    ("Oversampling", "WeightedRandomSampler ✓"),
-    ("Loss Weight (pos)", "18.11"),
+    ("Best Val Loss", "1.262"),
+    ("Val Accuracy", "93.4%"),
+    ("F1 Score", "0.151"),
+    ("Precision (t=0.60)", "9.5%"),
+    ("Recall (t=0.60)", "35.7%"),
+    ("Recall (t=0.05)", "100%"),
+    ("Total Parameters", "186,307"),
+    ("Train Samples", "5,100"),
+    ("Val Samples", "900"),
+    ("Balancing", "Sampler + pw=2.0"),
 ]
 for i, (metric, value) in enumerate(metrics_data):
     y = Inches(2.3 + i * 0.42)
@@ -595,7 +652,7 @@ add_multiline_text(slide, Inches(0.5), Inches(2.3), Inches(5.8), Inches(2.5), [
     "Sub-100ms tick execution (20.1ms mean) on IEEE 14-bus",
     "50-bus BESCOM grid model validated against SCADA data",
     "ML ensemble with AUC=0.72, AP=0.92, recall=72.6%",
-    "RGATv2 GNN with physics-informed loss and class-balanced training",
+    "RGATv2 GNN: 93.4% accuracy, 9.5% precision, F1=0.151",
     "NERC CIP + IEGC 2023 compliance at 86.7% and 87.3%",
     "SCADA protocol stack: IEC 61850, DNP3, Modbus (<3ms GOOSE)",
 ], font_size=11)

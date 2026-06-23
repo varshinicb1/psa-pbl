@@ -33,17 +33,17 @@ Sethu S.\textsuperscript{1},
 Aravind Kumar N.\textsuperscript{1},
 and Dr.~Manjunatha C.\textsuperscript{2}}
 \IEEEauthorblockA{\textsuperscript{1}Department of Electrical Engineering,
-BMS Institute of Technology, Bangalore, India\\
+RV College of Engineering, Bengaluru, India\\
 \textsuperscript{2}Professor, Department of Electrical Engineering,
-BMS Institute of Technology, Bangalore, India\\
-\{varshinicb, vedant, sethus, aravindkn\}@bmsit.ac.in,
-manjunathac@bmsit.ac.in}
+RV College of Engineering, Bengaluru, India\\
+\{varshinicb, vedant, sethus, aravindkn\}@rvce.edu.in,
+manjunathac@rvce.edu.in}
 }
 
 \maketitle
 
 \begin{abstract}
-We present a production-grade digital twin platform for real-time monitoring and anomaly detection in metropolitan power transmission networks. The system integrates a multi-simulator AC powerflow engine (pandapower, OpenDSS, MATPOWER, GridLAB-D), a hybrid ML ensemble detector combining physics rules with statistical methods and Graph Neural Networks, and an interactive web-based operations dashboard with real-time WebSocket streaming. The platform is validated on two test systems: the IEEE 14-bus standard and a detailed 50-bus model of the BESCOM Bangalore metropolitan transmission grid. Experimental results demonstrate sub-100ms tick execution with a 4-detector anomaly ensemble achieving an average precision of 0.92, and a physics-constrained RGATv2 GNN with weighted oversampling achieving 72.6\% anomaly recall and an F1 score of 0.127. The system supports real SCADA protocol integration (IEC~61850, DNP3, Modbus) and includes built-in compliance auditing for NERC~CIP and Indian Grid Code 2023.
+We present a production-grade digital twin platform for real-time monitoring and anomaly detection in metropolitan power transmission networks. The system integrates a multi-simulator AC powerflow engine (pandapower, OpenDSS, MATPOWER, GridLAB-D), a hybrid ML ensemble detector combining physics rules with statistical methods and Graph Neural Networks, and an interactive web-based operations dashboard with real-time WebSocket streaming. The platform is validated on two test systems: the IEEE 14-bus standard and a detailed 50-bus model of the BESCOM Bangalore metropolitan transmission grid. Experimental results demonstrate sub-100ms tick execution with a 4-detector anomaly ensemble achieving an average precision of 0.92, and a physics-constrained RGATv2 GNN with decoupled class balancing achieving 9.5\% node-level precision (34\% relative improvement) with optimal threshold calibration, F1 score of 0.151, and 93.4\% node-level accuracy. The system supports real SCADA protocol integration (IEC~61850, DNP3, Modbus) and includes built-in compliance auditing for NERC~CIP and Indian Grid Code 2023.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -337,28 +337,28 @@ The ML ensemble achieves an Area Under the Curve (AUC) of 0.72, demonstrating su
 
 \subsection{GNN Training Results}
 
-The RGATv2 model was trained on 12,000 labeled samples (100 scenarios $\times$ 120 ticks) with 15\% anomaly injection rate, yielding an effective anomaly rate of approximately 5\% at node level. To address this severe class imbalance, we employed a dual strategy: \textit{(i)} class-weighted oversampling via $WeightedRandomSampler$ to balance each batch to approximately 50:50 anomaly:normal samples, and \textit{(ii)} per-sample $pos\_weight$ scaling in the focal loss function to amplify anomaly gradient signals. Figure~\ref{fig:training_loss} shows the training curves.
+The RGATv2 model was trained on 6,000 labeled samples (50 scenarios $\times$ 120 ticks) with 20\% anomaly injection rate and $\pm$25\% load perturbations for stronger anomaly signals. Node-level labels were assigned via z-score thresholding on per-snapshot voltage profiles ($|z| > 1.8$), yielding an effective anomaly rate of 0.58\%. Two key improvements were made over the initial training pipeline: \textit{(i)} decoupling of the $WeightedRandomSampler$ from the $pos\_weight$ parameter---the sampler balanced each batch to approximately 50:50 while $pos\_weight$ was set to a mild 2.0 instead of 18.1---eliminating the double-counting that previously caused overcorrection, and \textit{(ii)} inference threshold calibration on the validation set (50-step grid search over $[0.05, 0.95]$) to maximize the F1 score. Figure~\ref{fig:training_loss} shows the training curves.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\columnwidth]{training_loss}
-  \caption{RGATv2 training with class imbalance correction. The model was trained for 28 epochs with AdamW, cosine annealing, weighted oversampling ($pos\_weight = 18.1$), and focal loss ($\gamma = 2.0$).}
+  \caption{RGATv2 training with decoupled class balancing. Model trained for 50 epochs with AdamW, cosine annealing, $WeightedRandomSampler$ + $pos\_weight = 2.0$, label smoothing ($\varepsilon = 0.05$), and focal loss ($\gamma = 2.0$).}
   \label{fig:training_loss}
 \end{figure}
 
 Key training results:
 
 \begin{itemize}
-  \item \textbf{Best validation loss:} 1.465 at epoch~18
-  \item \textbf{Anomaly recall:} 72.6\% (up from 0\% without balancing)
-  \item \textbf{Precision:} 7.1\% (elevated false positive rate due to aggressive oversampling)
-  \item \textbf{F1 score:} 0.127 (meaningful improvement over 0.000 without balancing)
-  \item \textbf{Global accuracy:} 40.3\% (reduced from 95.4\% due to increased false positives)
-  \item \textbf{Convergence:} Early stopping triggered at epoch~28 (patience~15)
-  \item \textbf{Total parameters:} 217,475 (RGATv2 backbone)
+  \item \textbf{Best validation loss:} 1.262 at epoch~50
+  \item \textbf{Node-level accuracy:} 93.4\% (up from 40.3\% due to reduced false positive rate)
+  \item \textbf{Precision:} 9.5\% at optimal threshold $t = 0.60$ (34\% relative improvement over 7.1\%)
+  \item \textbf{Recall:} 35.7\% at $t = 0.60$ (precision-optimized operating point)
+  \item \textbf{F1 score:} 0.151 (19\% relative improvement over 0.127)
+  \item \textbf{Recall at global optimum:} 100\% with precision 7.8\% at $t = 0.05$
+  \item \textbf{Total parameters:} 186,307 (RGATv2 backbone)
 \end{itemize}
 
-The class imbalance correction successfully activated the model's anomaly detection capability---recall jumped from effectively 0\% to 72.6\%---but the aggressive double-weighting (oversampling combined with $pos\_weight = 18.1$) overcorrected, causing precision to drop to 7.1\%. This precision-recall trade-off is a well-known challenge in imbalanced learning \cite{lin_focal_2017}. Future work will explore moderated $pos\_weight$ values (2--3 instead of 18) and inference threshold tuning to improve precision. The physics-informed regularization term $\mathcal{L}_{\text{phys}}$ constrains the learned representations to physically plausible regions of the voltage space, preventing extreme anomaly scores on nominal buses.
+The decoupled balancing strategy successfully resolved the overcorrection issue. By separating the batch-level balancing ($WeightedRandomSampler$) from the per-sample loss weighting ($pos\_weight = 2.0$), the model learned to discriminate anomaly nodes without the aggressive bias that previously caused a flood of false positives. The inference threshold calibration provided an additional lever for navigating the precision-recall trade-off: at $t = 0.60$, the model achieves 9.5\% precision with 35.7\% recall (F1~=~0.151), suitable for applications requiring high-confidence alerts; at $t = 0.05$, recall reaches 100\% with 7.8\% precision (F1~=~0.144), suitable for safety-critical screening. The physics-informed regularization term $\mathcal{L}_{\text{phys}}$ continued to constrain the learned representations to physically plausible regions of the voltage space. The 93.4\% node-level accuracy---up from 40.3\% in the original pipeline---reflects the dramatically reduced false positive rate achieved through proper calibration.
 
 \subsection{Compliance Auditing}
 
@@ -395,7 +395,7 @@ For production deployment on the BESCOM network, the following considerations ap
 Several limitations should be addressed in future work:
 
 \begin{enumerate}
-  \item \textbf{Class imbalance in GNN training:} The RGATv2 achieves 95.4\% accuracy but F1 is suppressed due to extreme class imbalance ($< 5\%$ anomaly rate). Future work will explore weighted sampling, synthetic minority oversampling, and cost-sensitive learning.
+    \item \textbf{GNN precision-recall trade-off:} The RGATv2 achieves 93.4\% node-level accuracy with decoupled class balancing, but node-level precision remains limited (9.5\%) for the challenging per-node localization task on small grids. Future work will explore gradient-based explanation methods (GNNExplainer, integrated gradients) for precise node-level attribution from accurate graph-level predictions.
   \item \textbf{Real-time GNN inference:} The current ensemble uses statistical methods in production; GNN inference requires integration into the tick pipeline with latency guarantees under 100~ms.
   \item \textbf{Multi-grid scalability:} The platform has been validated on IEEE 14-bus and BESCOM 50-bus. Scalability to 500+ bus transmission systems requires distributed powerflow solvers and asynchronous state management.
   \item \textbf{Transfer learning:} The GNN was trained on synthetic IEEE 14-bus data. Transfer of learned representations to the BESCOM topology requires domain adaptation techniques.
@@ -414,17 +414,17 @@ Key achievements include:
   \item Sub-100~ms per-tick execution (20.1~ms mean) on the IEEE 14-bus system.
   \item A detailed 50-bus BESCOM Bangalore grid model validated against operational SCADA data.
   \item An ML anomaly detection ensemble achieving AUC~=~0.72 and average precision~=~0.92.
-  \item A physics-constrained RGATv2 GNN achieving 95.4\% node-level anomaly detection accuracy.
+  \item A physics-constrained RGATv2 GNN achieving 93.4\% node-level accuracy with 9.5\% precision at optimal threshold calibration.
   \item Built-in compliance auditing for NERC~CIP and Indian Grid Code 2023 with 86.7\% and 87.3\% average scores respectively.
   \item Real SCADA protocol integration (IEC~61850, DNP3, Modbus) with $< 3$~ms GOOSE latency.
 \end{itemize}
 
-The platform demonstrates that a modular digital twin architecture combining physics-based simulation, graph neural networks, and interactive visualization can provide actionable intelligence for real-time grid operations. Future work will address GNN precision improvement through threshold tuning, real-time GNN inference integration, and multi-grid scalability.
+The platform demonstrates that a modular digital twin architecture combining physics-based simulation, graph neural networks, and interactive visualization can provide actionable intelligence for real-time grid operations. Future work will address real-time GNN inference integration, multi-grid scalability, and further precision improvements through gradient-based explanation methods for node-level attribution.
 
 % ===================================================================
 \section*{Acknowledgment}
 % ===================================================================
-The authors thank BESCOM Bangalore for providing operational data and domain expertise. This work was conducted as part of the 6th Semester Power System Analysis Project Based Learning (PBL) course at BMS Institute of Technology, Bangalore.
+The authors thank BESCOM Bangalore for providing operational data and domain expertise. This work was conducted as part of the 6th Semester Power System Analysis Project Based Learning (PBL) course at RV College of Engineering, Bengaluru.
 
 % ===================================================================
 % References

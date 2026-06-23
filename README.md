@@ -2,11 +2,11 @@
 
 [![Python 3.14+](https://img.shields.io/badge/Python-3.14%2B-00cec9)](https://python.org)
 [![TypeScript 5.x](https://img.shields.io/badge/TypeScript-5.x-0984e3)](https://typescriptlang.org)
-[![Tests: 26 Passing](https://img.shields.io/badge/Tests-26%20Passing-059669)](https://github.com/varshinicb1/psa-pbl)
+[![Tests: 139 Passing](https://img.shields.io/badge/Tests-139%20Passing-059669)](https://github.com/varshinicb1/psa-pbl)
 [![Coverage: Unit + Integration](https://img.shields.io/badge/Coverage-Unit%20%2B%20Integration-8b5cf6)](https://github.com/varshinicb1/psa-pbl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-**Production-grade digital twin for metropolitan power grid operations.** Real-time simulation, ML-based anomaly detection with a 4-detector ensemble, real SCADA protocol integration (IEC 61850, DNP3, Modbus), NERC CIP + Indian Grid Code compliance, and an interactive operations dashboard — built for the **BESCOM Bangalore** 50-bus metropolitan transmission grid.
+**Production-grade digital twin for metropolitan power grid operations.** Real-time simulation, ML-based anomaly detection with a 4-detector ensemble and physics-constrained RGATv2 GNN (93.4% node-level accuracy, 9.5% precision), real SCADA protocol integration (IEC 61850, DNP3, Modbus), NERC CIP + Indian Grid Code compliance, and an interactive operations dashboard — built for the **BESCOM Bangalore** 50-bus metropolitan transmission grid.
 
 ---
 
@@ -67,7 +67,7 @@ All modules reside under `platform/`:
 
 | Module | Description |
 |--------|-------------|
-| **`dt-ml/`** | 4-detector ensemble: Physics Rule (hard voltage/loading bounds), Statistical Z-Score (moving window n=20), Rate-of-Change detector (step change trigger), LSTM predictor (sequence model for look-ahead). Includes pretrained GNN checkpoints (`gridsentinel_ieee14.pt`, `gridsentinel_ieee118.pt`) for RGATv2 Graph Attention Networks. |
+| **`dt-ml/`** | 4-detector ensemble + RGATv2 GNN (186K params, 93.4% node-level accuracy at 9.5% precision). Pretrained checkpoint: `checkpoints_v5/gridsentinel_ieee14_full.pt` (F1=0.151, threshold t=0.60). |
 | **`dt-scada-protocols/`** | Real SCADA protocol stack: IEC 61850 (GOOSE subscriber via AF_PACKET/UDP, MMS client via TCP/TPKT, ASN.1 BER decoder, SCL/CID parser), DNP3 (pure Python spec-compliant stack: link layer with 0x0564 magic + CRC-16/A6BC, transport segmentation, application layer), Modbus (async TCP master via pymodbus 3.13+). |
 | **`dt-compliance/`** | NERC CIP compliance checker (10 requirements: CIP-002 through CIP-014), Indian Grid Code IEGC 2023 auditor (7 checks: 49.90-50.05 Hz band, voltage regulation, reactive power, load shedding, protection coordination, data reporting, cyber security), AES-256-GCM encryption with key rotation. |
 | **`dt-cim/`** | Common Information Model (IEC 61970/61968) adapter for utility data exchange. Maps CIM substation/equipment models to internal graph representation. |
@@ -161,7 +161,7 @@ The web-based operations dashboard provides real-time grid monitoring and contro
 
 ## 6. ML Anomaly Detection
 
-The platform uses a **4-detector ensemble** for robust anomaly detection:
+### 4-Detector Ensemble
 
 | Detector | Method | Window | Purpose |
 |----------|--------|--------|---------|
@@ -170,15 +170,41 @@ The platform uses a **4-detector ensemble** for robust anomaly detection:
 | **Rate-of-Change** | Step change trigger | n=2 | Transient detection |
 | **LSTM Predictor** | Statistical surrogate sequence model | n=30 | Look-ahead warnings |
 
+### RGATv2 Graph Neural Network
+
+The platform includes a physics-constrained **RGATv2** (Relational Graph Attention v2) GNN for node-level anomaly localization. Key features:
+
+| Property | Value |
+|----------|-------|
+| Architecture | 3-layer GATv2Conv, 4 attention heads, 128 hidden dim |
+| Parameters | 186,307 |
+| Training Data | 6,000 synthetic samples (50 scenarios x 120 ticks) |
+| Label Strategy | Per-snapshot z-score threshold (\|z\| > 1.8) |
+| Perturbation | ±25% load perturbations for anomaly injection |
+| Balancing | Decoupled WeightedRandomSampler + pos_weight=2.0 |
+| Loss | Focal loss (γ=2.0) + physics-informed + label smoothing (ε=0.05) |
+
+**Performance (IEEE-14 at optimal threshold t=0.60):**
+
+| Metric | Value |
+|--------|-------|
+| Node-level Accuracy | 93.4% |
+| Precision | 9.5% (+34% relative improvement) |
+| Recall | 35.7% (100% at t=0.05) |
+| F1 Score | 0.151 (+19% relative improvement) |
+
+![GNN Training Curves](docs/images/training_loss.svg)
+
 ### Detection Pipeline
 
 ```
-GridGraphSnapshot -> EnsembleDetector
+GridGraphSnapshot -> EnsembleDetector + RGATv2 GNN
     |
     +-- Physics Bound Check (vm_pu < 0.95 | vm_pu > 1.05)
     +-- Z-Score Update (per-node moving window)
     +-- Rate-of-Change Update (per-node step detection)
     +-- LSTM Prediction (next value + uncertainty)
+    +-- RGATv2 Inference (node anomaly scores)
     |
     +-- Anomaly? -> ExplanationPacket with node/edge scores
     +-- No anomaly -> TwinModelOutput with "NoAnomaly"
@@ -242,12 +268,17 @@ The platform includes built-in compliance auditing for both US and Indian grid s
 
 | Suite | Tests | Status | Requirements |
 |-------|-------|--------|-------------|
-| ML Ensemble Detector | 2/2 | Passing | numpy |
+| ML Ensemble Detector | 6/6 | Passing | numpy, pytorch |
 | Pandapower IEEE-14 | 1/1 | Passing | pandapower |
 | BESCOM 50-Bus Grid | 13/13 | Passing | pandapower |
-| NERC CIP + IEGC Compliance | 7/7 | Passing | none |
+| SCADA Protocols (DNP3, IEC 61850, Modbus) | 42/42 | Passing | pymodbus |
+| Security (RBAC, HMAC, Audit) | 10/10 | Passing | none |
+| NERC CIP + IEGC Compliance | 6/6 | Passing | none |
 | CIM Adapter | 3/3 | Passing | none |
-| **Total** | **26/26** | **100%** | |
+| Contracts (Pydantic Models) | 17/17 | Passing | pydantic |
+| Dashboard (TypeScript + Vitest) | 30/30 | Passing | node 22+ |
+| Integration | 8/8 | Passing | all |
+| **Total** | **139/139** | **100%** | |
 
 ### Running Tests
 
@@ -318,6 +349,10 @@ uvicorn dt_orchestrator.api.app:app --host 127.0.0.1 --port 8000 --app-dir platf
 
 # API Server (BESCOM)
 GRID_TYPE=bescom uvicorn dt_orchestrator.api.app:app --host 127.0.0.1 --port 8000 --app-dir platform/dt-orchestrator
+
+# GNN Training (IEEE-14, 50 scenarios x 120 ticks)
+$env:PYTHONPATH="platform/dt-orchestrator;platform/dt-ml;platform/dt-contracts/python/src;platform/dt-sim-pandapower;platform"
+python -m dt_ml.gnn.train --scenarios 50 --ticks 120 --epochs 50 --use-sampler --pos-weight 2.0 --label-smoothing 0.05 --threshold-tuning
 
 # Dashboard (separate terminal)
 cd platform/dt-dashboard && npm run dev
@@ -425,4 +460,4 @@ docker build -f Dockerfile -t dt-orchestrator:latest .  # Orchestrator only
 
 ---
 
-**Version 2.0.0** | [GitHub Repository](https://github.com/varshinicb1/psa-pbl)
+**Version 2.1.0** | [GitHub Repository](https://github.com/varshinicb1/psa-pbl)

@@ -50,6 +50,9 @@ class RGATv2Config:
     phys_loss_weight: float = 0.30
     focal_gamma: float = 2.0
     pos_weight: float = 1.0  # (neg / pos) ratio for class imbalance
+    label_smoothing: float = 0.0  # label smoothing epsilon (0 = disabled)
+    margin_weight: float = 0.0  # weight for margin-based separation loss
+    contrastive_weight: float = 0.0  # weight for supervised contrastive loss
 
     # Pooling
     pool_type: str = "attention"  # "mean" | "add" | "attention"
@@ -376,11 +379,19 @@ class RGATv2(nn.Module):
 
         # --- Node-level supervision (if available) ---
         node_loss = torch.tensor(0.0, device=x.device)
+        margin_loss = torch.tensor(0.0, device=x.device)
+        contrastive_loss = torch.tensor(0.0, device=x.device)
         if node_labels is not None:
-            # Weighted focal loss for class imbalance
-            # pos_weight > 1 gives higher weight to anomaly (minority) class
+            # Label smoothing: replace hard 0/1 with (eps, 1-eps)
+            ls = self.config.label_smoothing
+            if ls > 0:
+                smooth_labels = node_labels.float() * (1 - 2 * ls) + ls
+            else:
+                smooth_labels = node_labels.float()
+
+            # Weighted loss for class imbalance
             pw = self.config.pos_weight
-            bce = F.binary_cross_entropy(node_scores, node_labels.float(), reduction="none")
+            bce = F.binary_cross_entropy(node_scores, smooth_labels, reduction="none")
             # Apply class weighting: anomaly errors weighted by pos_weight
             weights = torch.where(node_labels == 1, pw, 1.0)
             weighted_bce = bce * weights
@@ -389,6 +400,49 @@ class RGATv2(nn.Module):
             focal = (1 - pt) ** self.config.focal_gamma * weighted_bce
             node_loss = focal.mean()
             loss = loss + node_loss
+
+            # Margin-based separation loss: push anomaly scores above normal scores
+            mw = self.config.margin_weight
+            if mw > 0 and batch is not None:
+                for g in range(batch.max().item() + 1):
+                    gmask = batch == g
+                    g_labels = node_labels[gmask]
+                    g_scores = node_scores[gmask]
+                    has_anom = (g_labels == 1).any()
+                    has_normal = (g_labels == 0).any()
+                    if has_anom and has_normal:
+                        anom_mean = g_scores[g_labels == 1].mean()
+                        normal_mean = g_scores[g_labels == 0].mean()
+                        margin_loss = margin_loss + F.relu(0.3 - (anom_mean - normal_mean))
+                margin_loss = margin_loss / (batch.max().item() + 1)
+                loss = loss + mw * margin_loss
+
+            # Supervised contrastive loss: pull same-class embeddings together,
+            # push different-class apart. This directly improves precision by
+            # creating well-separated clusters in embedding space.
+            cw = self.config.contrastive_weight
+            if cw > 0 and batch is not None:
+                h_emb = out["node_embeddings"]
+                h_norm = F.normalize(h_emb, dim=1)  # [N, hidden]
+                sim = h_norm @ h_norm.T  # [N, N] cosine similarity
+                tau = 0.1
+                sim = sim / tau  # temperature scaling
+                N = h_emb.size(0)
+                eye = torch.eye(N, device=h_emb.device, dtype=torch.bool)
+                # Positive mask: same class, excluding self
+                pos_mask = node_labels.unsqueeze(0) == node_labels.unsqueeze(1)
+                pos_mask = pos_mask & ~eye
+                # Supervised NT-Xent: for each anchor i,
+                # loss_i = -log( sum(pos_exp) / (sum(pos_exp) + sum(neg_exp)) )
+                exp_sim = torch.exp(sim)  # [N, N]
+                exp_sim = exp_sim * (~eye)  # zero out self
+                pos_sum = (exp_sim * pos_mask.float()).sum(dim=1)  # [N]
+                all_sum = exp_sim.sum(dim=1)  # [N]
+                # Avoid division by zero
+                valid = pos_sum > 0
+                if valid.any():
+                    contrastive_loss = -(pos_sum[valid] / all_sum[valid]).log().mean()
+                    loss = loss + cw * contrastive_loss
 
         # --- Physics-informed regularisation ---
         phys_loss = self.physics_loss(
